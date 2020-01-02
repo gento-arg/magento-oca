@@ -1,11 +1,16 @@
 {
     "name": "gento-arg/module-oca",
     "description": "Modulo de Magento 2 para la integracion con OCA",
+    "type": "magento2-module",
+    "version": "1.0.0",
     "require": {
         "php": ">=7.0",
         "nerioespina/oca-php-api": "dev-master"
     },
     "autoload": {
+        "files": [
+            "registration.php"
+        ],
         "psr-4": {
             "Gento\\Oca\\": ""
         }
