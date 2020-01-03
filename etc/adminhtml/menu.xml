@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Gento_Oca::shipping" title="OCA" translate="title" module="Gento_Oca" sortOrder="45" dependsOnModule="Gento_Oca" resource="Gento_Oca::shipping" parent="Magento_Backend::stores" />
+        <add id="Gento_Oca::operatories" title="Operatories" module="Gento_Oca" sortOrder="20" resource="Gento_Oca::operatories" parent="Gento_Oca::shipping" action="oca/operatory" />
+        <add id="Gento_Oca::branches" title="Branches" module="Gento_Oca" sortOrder="22" resource="Gento_Oca::branches" parent="Gento_Oca::shipping" action="oca/branch" />
+    </menu>
+</config>

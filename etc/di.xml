@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Gento\Oca\Api\OperatoryRepositoryInterface" type="Gento\Oca\Model\OperatoryRepository"/>
+    <preference for="Gento\Oca\Api\Data\OperatoryInterface" type="Gento\Oca\Model\Operatory"/>
+    <preference for="Gento\Oca\Api\Data\OperatorySearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
+    <preference for="Gento\Oca\Api\BranchRepositoryInterface" type="Gento\Oca\Model\BranchRepository"/>
+    <preference for="Gento\Oca\Api\Data\BranchInterface" type="Gento\Oca\Model\Branch"/>
+    <preference for="Gento\Oca\Api\Data\BranchSearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
+    <type name="Magento\Backend\Controller\Adminhtml\Index\GlobalSearch">
+        <arguments>
+            <argument name="searchModules" xsi:type="array">
+                <item name="oca_operatories" xsi:type="array">
+                    <item name="class" xsi:type="string">Gento\Oca\Model\Search\Operatory</item>
+                    <item name="acl" xsi:type="string">Gento\Oca::operatories</item>
+                </item>
+                <item name="oca_branches" xsi:type="array">
+                    <item name="class" xsi:type="string">Gento\Oca\Model\Search\Branch</item>
+                    <item name="acl" xsi:type="string">Gento\Oca::branches</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="gento_oca_operatory_listing_data_source" xsi:type="string">GentoOcaOperatoryGridCollection</item>
+                <item name="gento_oca_branch_listing_data_source" xsi:type="string">GentoOcaBranchGridCollection</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Gento\Oca\Model\ResourceModel\Operatory\Collection">
+        <arguments>
+            <argument name="model" xsi:type="string">Gento\Oca\Model\Operatory</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Operatory</argument>
+            <argument name="idFieldName" xsi:type="string">operatory_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_operatory_collection</argument>
+            <argument name="eventObject" xsi:type="string">operatory_collection</argument>
+        </arguments>
+    </type>
+    <virtualType name="GentoOcaOperatoryGridCollection" type="Gento\Oca\Model\ResourceModel\Operatory\Collection">
+        <arguments>
+            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Operatory</argument>
+            <argument name="idFieldName" xsi:type="string">operatory_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_operatory_collection</argument>
+            <argument name="eventObject" xsi:type="string">operatory_collection</argument>
+        </arguments>
+    </virtualType>
+    <type name="Gento\Oca\Model\ResourceModel\Branch\Collection">
+        <arguments>
+            <argument name="model" xsi:type="string">Gento\Oca\Model\Branch</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Branch</argument>
+            <argument name="idFieldName" xsi:type="string">branch_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_branch_collection</argument>
+            <argument name="eventObject" xsi:type="string">branch_collection</argument>
+        </arguments>
+    </type>
+    <virtualType name="GentoOcaBranchGridCollection" type="Gento\Oca\Model\ResourceModel\Branch\Collection">
+        <arguments>
+            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Branch</argument>
+            <argument name="idFieldName" xsi:type="string">branch_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_branch_collection</argument>
+            <argument name="eventObject" xsi:type="string">branch_collection</argument>
+        </arguments>
+    </virtualType>
+</config>

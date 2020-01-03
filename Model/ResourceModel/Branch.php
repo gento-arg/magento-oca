@@ -2,7 +2,7 @@
 
 namespace Gento\Oca\Model\ResourceModel;
 
-class Operatory extends AbstractModel
+class Branch extends AbstractModel
 {
     /**
      * Initialize resource model
@@ -11,6 +11,6 @@ class Operatory extends AbstractModel
      */
     protected function _construct()
     {
-        $this->_init('oca_operatories', 'operatory_id');
+        $this->_init('oca_branches', 'branch_id');
     }
 }

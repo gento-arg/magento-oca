@@ -48,10 +48,6 @@
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <comment>OCA E-Pak password</comment>
                 </field>
-                <field id="account" translate="label" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Account number</label>
-                    <comment>OCA E-Pak account number</comment>
-                </field>
                 <field id="insurance_percentage" translate="label" type="text" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Insurance percentage</label>
                     <comment>Only apply to operatories with insurance</comment>
@@ -69,7 +65,7 @@
                     <comment>The time frame when the shipment should be picked up by OCA</comment>
                     <source_model>Gento\Oca\Model\Config\Source\ReceptionTime</source_model>
                 </field>
-                <field id="active" translate="label" type="select" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="confirm" translate="label" type="select" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Confirm</label>
                     <comment>Enable draft to shippings (If true, need to be confirmed on OCA Epak Dashboard)</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -82,16 +78,9 @@
         </section>
         <section id="tax">
             <group id="defaults" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                <fields>
-                    <cuit translate="label">
-                        <label>Cuit</label>
-                        <frontend_type>text</frontend_type>
-                        <sort_order>10</sort_order>
-                        <show_in_default>1</show_in_default>
-                        <show_in_website>1</show_in_website>
-                        <show_in_store>1</show_in_store>
-                    </cuit>
-                </fields>
+                <field id="cuit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>CUIT</label>
+                </field>
             </group>
         </section>
     </system>

@@ -2,16 +2,27 @@
 
 namespace Gento\Oca\Model\ResourceModel\Operatory;
 
-class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection
+use Gento\Oca\Model\Operatory;
+use Gento\Oca\Model\ResourceModel\AbstractCollection;
+
+class Collection extends AbstractCollection
 {
+    /**
+     * Define resource model
+     *
+     * @return void
+     */
     protected function _construct()
     {
-        $this->_init('Gento\Oca\Model\Operatory', 'Gento\Oca\Model\ResourceModel\Operatory');
+        $this->_init(
+            Operatory::class,
+            \Gento\Oca\Model\ResourceModel\Operatory::class
+        );
     }
 
     public function getActiveList()
     {
-        return $this->addFieldToFilter('active', ['eq' => 1]);
+        return $this->addFieldToFilter('active', ['eq' => true]);
     }
 
 }

@@ -1,0 +1,226 @@
+<?xml version="1.0" ?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">gento_oca_branch_form.branch_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Branch Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Gento\Oca\Block\Adminhtml\Button\Back" />
+            <button name="delete" class="Gento\Oca\Block\Adminhtml\Button\Branch\Delete" />
+            <button name="reset" class="Gento\Oca\Block\Adminhtml\Button\Reset" />
+            <button name="save" class="Gento\Oca\Block\Adminhtml\Button\Save" />
+            <button name="save_and_continue" class="Gento\Oca\Block\Adminhtml\Button\SaveAndContinue" />
+        </buttons>
+        <namespace>gento_oca_branch_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>gento_oca_branch_form.branch_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="branch_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="oca/branch/save" />
+        </settings>
+        <dataProvider class="Gento\Oca\Model\Branch\DataProvider" name="branch_form_data_source">
+            <settings>
+                <requestFieldName>branch_id</requestFieldName>
+                <primaryFieldName>branch_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">Branch Information</label>
+        </settings>
+        <field name="branch_id" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+                <dataScope>branch_id</dataScope>
+            </settings>
+        </field>
+        <field name="branch_id" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">ID</label>
+                <dataScope>branch_id</dataScope>
+            </settings>
+        </field>
+
+        <field name="code" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Code</label>
+                <dataScope>code</dataScope>
+            </settings>
+        </field>
+
+        <field name="short_name" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Short name</label>
+                <dataScope>short_name</dataScope>
+            </settings>
+        </field>
+
+        <field name="name" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Name</label>
+                <dataScope>name</dataScope>
+            </settings>
+        </field>
+
+        <field name="description" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Description</label>
+                <dataScope>description</dataScope>
+            </settings>
+        </field>
+
+        <field name="address_street" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Address street</label>
+                <dataScope>address_street</dataScope>
+            </settings>
+        </field>
+
+        <field name="address_number" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Address number</label>
+                <dataScope>address_number</dataScope>
+            </settings>
+        </field>
+
+        <field name="address_floor" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Address floor</label>
+                <dataScope>address_floor</dataScope>
+            </settings>
+        </field>
+
+        <field name="city" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">City</label>
+                <dataScope>city</dataScope>
+            </settings>
+        </field>
+
+        <field name="zipcode" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Zipcode</label>
+                <dataScope>zipcode</dataScope>
+            </settings>
+        </field>
+
+        <field name="active" formElement="checkbox">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">branch</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Active</label>
+                <dataScope>active</dataScope>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+
+    </fieldset>
+</form>
