@@ -2,12 +2,9 @@
 
 namespace Gento\Oca\Model\Cron\Branch;
 
-use Gento\Oca\Api\BranchRepositoryInterface;
-use Gento\Oca\Api\Data\BranchInterface;
-use Gento\Oca\Api\Data\BranchInterfaceFactory;
 use Gento\Oca\Model\OcaApi;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
-use Magento\Framework\Api\DataObjectHelper;
+use Magento\Framework\Event\ManagerInterface;
 
 class Sync
 {
@@ -22,34 +19,18 @@ class Sync
     protected $operatoryCollectionFactory;
 
     /**
-     * @var BranchRepositoryInterface
+     * @var ManagerInterface
      */
-    protected $branchRepository;
-
-    /**
-     * Data Object Helper
-     * @var DataObjectHelper
-     */
-    protected $dataObjectHelper;
-
-    /**
-     * Branch factory
-     * @var BranchInterfaceFactory
-     */
-    protected $branchFactory;
+    protected $eventManager;
 
     public function __construct(
         CollectionFactory $operatoryCollectionFactory,
-        BranchInterfaceFactory $branchFactory,
-        BranchRepositoryInterface $branchRepository,
-        DataObjectHelper $dataObjectHelper,
+        ManagerInterface $eventManager,
         OcaApi $ocaApi
     ) {
         $this->_ocaApi = $ocaApi;
         $this->operatoryCollectionFactory = $operatoryCollectionFactory;
-        $this->branchFactory = $branchFactory;
-        $this->branchRepository = $branchRepository;
-        $this->dataObjectHelper = $dataObjectHelper;
+        $this->eventManager = $eventManager;
     }
 
     public function execute()
@@ -62,29 +43,25 @@ class Sync
         foreach ($operatoryCollection->getUsesIdci() as /** @var \Gento\Oca\Model\Operatory */$operatory) {
             $result = $this->_ocaApi->getBranches($operatory->getCode());
 
-            foreach ($result as $row) {
-                try {
-                    $branch = $this->branchRepository->getByCode($row['idCentroImposicion']);
-                } catch (\Exception $e) {
-                    /** @var \Gento\Oca\Model\Branch */
-                    $branch = $this->branchFactory->create();
-                    $branchData = [
-                        'code' => $row['idCentroImposicion'],
-                        'short_name' => $row['Sigla'],
-                        'name' => $row['Descripcion'],
-                        'description' => $row['Descripcion'],
-                        'address_street' => $row['Calle'],
-                        'address_number' => $row['Numero'],
-                        'address_floor' => $row['Piso'],
-                        'city' => $row['Localidad'],
-                        'zipcode' => $row['CodigoPostal'],
-                        'active' => true,
-                    ];
+            $branchsData = array_map(function ($row) {
+                return [
+                    'code' => $row['idCentroImposicion'],
+                    'short_name' => $row['Sigla'],
+                    'name' => $row['Descripcion'],
+                    'description' => $row['Descripcion'],
+                    'address_street' => $row['Calle'],
+                    'address_number' => $row['Numero'],
+                    'address_floor' => $row['Piso'],
+                    'city' => $row['Localidad'],
+                    'zipcode' => $row['CodigoPostal'],
+                    'active' => true,
+                ];
+            }, $result);
 
-                    $this->dataObjectHelper->populateWithArray($branch, $branchData, BranchInterface::class);
-                    $this->branchRepository->save($branch);
-                }
-            }
+            $this->eventManager->dispatch('gento_oca_get_branch_data', [
+                'branchs_data' => $branchsData,
+                'operatory' => $operatory,
+            ]);
         }
     }
 }

@@ -45,5 +45,8 @@
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="branch_id" />
         </constraint>
+        <constraint xsi:type="unique" referenceId="UK_CODE">
+            <column name="code" />
+        </constraint>
     </table>
 </schema>

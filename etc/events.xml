@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="gento_oca_get_branch_data">
+        <observer name="save_branch_data" instance="Gento\Oca\Observer\SaveBranchData" />
+    </event>
+</config>
