@@ -53,21 +53,6 @@
                 <dataScope>branch_id</dataScope>
             </settings>
         </field>
-        <field name="branch_id" formElement="input">
-            <argument name="data" xsi:type="array">
-                <item name="config" xsi:type="array">
-                    <item name="source" xsi:type="string">branch</item>
-                </item>
-            </argument>
-            <settings>
-                <validation>
-                    <rule name="required-entry" xsi:type="boolean">true</rule>
-                </validation>
-                <dataType>text</dataType>
-                <label translate="true">ID</label>
-                <dataScope>branch_id</dataScope>
-            </settings>
-        </field>
 
         <field name="code" formElement="input">
             <argument name="data" xsi:type="array">

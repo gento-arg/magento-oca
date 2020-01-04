@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="gento_oca">
+        <job name="gento_oca_branches_sync" instance="Gento\Oca\Model\Cron\Branch\Sync" method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
+    </group>
+</config>

@@ -53,22 +53,7 @@
                 <dataScope>operatory_id</dataScope>
             </settings>
         </field>
-        <field name="operatory_id" formElement="input">
-            <argument name="data" xsi:type="array">
-                <item name="config" xsi:type="array">
-                    <item name="source" xsi:type="string">operatory</item>
-                </item>
-            </argument>
-            <settings>
-                <validation>
-                    <rule name="required-entry" xsi:type="boolean">true</rule>
-                </validation>
-                <dataType>text</dataType>
-                <label translate="true">ID</label>
-                <dataScope>operatory_id</dataScope>
-            </settings>
-        </field>
-
+        
         <field name="name" formElement="input">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">

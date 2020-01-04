@@ -117,18 +117,6 @@
                 <sorting>asc</sorting>
             </settings>
         </column>
-        <column name="operatory_id">
-            <settings>
-                <filter>textRange</filter>
-                <editor>
-                    <validation>
-                        <rule name="required-entry" xsi:type="boolean">true</rule>
-                    </validation>
-                    <editorType>text</editorType>
-                </editor>
-                <label translate="true">ID</label>
-            </settings>
-        </column>
 
         <column name="name">
             <settings>

@@ -125,6 +125,19 @@ class BranchRepository implements BranchRepositoryInterface
         return $this->instances[$branchId];
     }
 
+    public function getByCode($idCi)
+    {
+        if (!isset($this->instances['ext' . $idCi])) {
+            /** @var BranchInterface|\Magento\Framework\Model\AbstractModel $branch */
+            $branch = $this->branchInterfaceFactory->create();
+            $this->resource->load($branch, $idCi, BranchInterface::CODE);
+            if (!$branch->getId()) {
+                throw new NoSuchEntityException(__('Requested Branch doesn\'t exist'));
+            }
+            $this->instances['ext' . $idCi] = $branch;
+        }
+        return $this->instances['ext' . $idCi];
+    }
     /**
      * Retrieve Branches matching the specified criteria.
      *

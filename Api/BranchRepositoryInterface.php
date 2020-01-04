@@ -23,6 +23,13 @@ interface BranchRepositoryInterface
     public function get($id);
 
     /**
+     * @param $idCi
+     * @return BranchInterface
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getByCode($id);
+
+    /**
      * @param \Magento\Framework\Api\SearchCriteriaInterface $searchCriteria
      * @return \Gento\Oca\Api\Data\BranchSearchResultInterface
      * @throws \Magento\Framework\Exception\LocalizedException

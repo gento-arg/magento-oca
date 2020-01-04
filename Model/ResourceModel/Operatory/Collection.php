@@ -25,4 +25,8 @@ class Collection extends AbstractCollection
         return $this->addFieldToFilter('active', ['eq' => true]);
     }
 
+    public function getUsesIdci()
+    {
+        return $this->addFieldToFilter('uses_idci', ['eq' => true]);
+    }
 }

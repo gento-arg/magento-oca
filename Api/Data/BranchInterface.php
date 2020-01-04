@@ -17,6 +17,7 @@ interface BranchInterface
     const CITY = 'city';
     const ZIPCODE = 'zipcode';
     const ACTIVE = 'active';
+
     /**
      * @param int $id
      * @return BranchInterface
@@ -38,7 +39,7 @@ interface BranchInterface
      * @return int
      */
     public function getBranchId();
-    
+
     /**
      * @param string $code
      * @return BranchInterface
