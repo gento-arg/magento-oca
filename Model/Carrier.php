@@ -31,9 +31,19 @@ class Carrier extends AbstractCarrier implements CarrierInterface
     protected $_operatoryCollectionFactory;
 
     /**
-     * @var \Magento\Framework\DataObjectFactory
+     * @param \Gento\Oca\Model\OcaApi
      */
-    protected $_objectFactory;
+    private $ocaApi;
+
+    /**
+     * @param \Gento\Oca\Model\BranchRepositoryFactory
+     */
+    private $branchRepositoryFactory;
+
+    /**
+     * @param \Magento\Framework\Event\ManagerInterface
+     */
+    private $eventManager;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -41,14 +51,18 @@ class Carrier extends AbstractCarrier implements CarrierInterface
         \Psr\Log\LoggerInterface $logger,
         \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
         \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
-        \Gento\Oca\Model\ResourceModel\OperatoryFactory $operatoryCollectionFactory,
-        \Magento\Framework\DataObjectFactory $objectFactory,
+        \Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory $operatoryCollectionFactory,
+        \Gento\Oca\Model\OcaApi $ocaApi,
+        \Gento\Oca\Model\BranchRepositoryFactory $branchRepositoryFactory,
+        \Magento\Framework\Event\ManagerInterface $eventManager,
         array $data = []
     ) {
         $this->_rateResultFactory = $rateResultFactory;
         $this->_rateMethodFactory = $rateMethodFactory;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
-        $this->_objectFactory = $objectFactory;
+        $this->ocaApi = $ocaApi;
+        $this->branchRepositoryFactory = $branchRepositoryFactory;
+        $this->eventManager = $eventManager;
         parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
     }
 
@@ -101,8 +115,6 @@ class Carrier extends AbstractCarrier implements CarrierInterface
 
         $operatory = $this->_operatoryCollectionFactory->create();
 
-        $cuit = $this->getStoreConfig('tax/defaults/cuit');
-
         $senderZipCode = $request->getPostcode();
         $packageValue = $request->getPackageValue();
 
@@ -118,7 +130,6 @@ class Carrier extends AbstractCarrier implements CarrierInterface
                     $rateResult,
                     $weight,
                     $volume,
-                    $cuit,
                     $senderZipCode,
                     $receiverZipcode,
                     $packageValue,
@@ -135,33 +146,58 @@ class Carrier extends AbstractCarrier implements CarrierInterface
         \Magento\Shipping\Model\Rate\Result $rateResult,
         $weight,
         $volume,
-        $cuit,
         $senderZipcode,
         $receiverZipcode,
         $packageValue,
         $packageQty
     ) {
-        // If operatory use id centro imposicion (Branch)
-        if ($operatory->getUsesIdci()) {
-            $branches = $operatory->getBranches();
+        $tarifa = $this->ocaApi->getQuote(
+            $operatory->getCode(),
+            $weight,
+            $volume,
+            $senderZipcode,
+            $receiverZipcode,
+            $packageQty,
+            $packageValue
+        );
 
-            foreach ($branches as $branch) {
-                // $code = $operatory->getCode() . "_" . $branch->getCode();
-                $code = $branch->getFullCode();
-                // $description = $operatory->getName() . " " . $branch->getFullDescription();
-                $description = $branch->getFullDescription();
+        if ($tarifa == null) {
+            return;
+        }
+
+        $quoteValue = $tarifa->Total;
+
+        $plazoEntrega = $tarifa->PlazoEntrega + (int) $this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        if ($operatory->getUsesIdci()) {
+            $branches = $this->ocaApi->getBranchesZipCode($operatory->getCode(), $receiverZipcode);
+
+            $this->eventManager->dispatch('gento_oca_get_branch_data', [
+                'branchs_data' => $branches,
+                'operatory' => $operatory->getCode(),
+            ]);
+
+            /**
+             * @var \Gento\Oca\Model\BranchRepository $branchRepository
+             */
+            $branchRepository = $this->branchRepositoryFactory->create();
+            foreach ($branches as $branchData) {
+                /**
+                 * @var \Gento\Oca\Model\Branch $branch
+                 */
+                $branch = $branchRepository->getByCode($branchData['code']);
+                if (!$branch->getActive()) {
+                    continue;
+                }
+
+                $code = $operatory->getCode() . "_" . $branch->getCode();
+                $description = $operatory->getName() . " " . $branch->getFullDescription();
 
                 $this->_addRate(
                     $rateResult,
                     $operatory,
-                    $weight,
-                    $volume,
-                    $senderZipcode,
-                    $branch->getZipcode(),
-                    $packageQty,
-                    $cuit,
                     $code,
-                    $packageValue,
+                    $quoteValue,
+                    $plazoEntrega,
                     $description
                 );
             }
@@ -169,14 +205,9 @@ class Carrier extends AbstractCarrier implements CarrierInterface
             $this->_addRate(
                 $rateResult,
                 $operatory,
-                $weight,
-                $volume,
-                $senderZipcode,
-                $receiverZipcode,
-                1,
-                $cuit,
                 $operatory->getCode(),
-                $packageValue
+                $quoteValue,
+                $plazoEntrega
             );
         }
 
@@ -186,89 +217,66 @@ class Carrier extends AbstractCarrier implements CarrierInterface
     protected function _addRate(
         $rateResult,
         $operatory,
-        $weight,
-        $volume,
-        $senderZipcode,
-        $receiverZipcode,
-        $quantityOfPackages,
-        $cuit,
         $operatoryCode,
-        $subtotal = 0,
-        $freeBoxes,
+        $total = 0,
+        $plazoEntrega,
         $description = false
     ) {
-        $calculator = $operatory->getCalculator();
-
-        $param = $this->_objectFactory->create();
-        $param->setWeight($weight);
-        $param->setVolume($volume);
-        $param->setSenderZipcode($senderZipcode);
-        $param->setReceiverZipcode($receiverZipcode);
-        $param->setQuantityOfPackages($quantityOfPackages);
-        $param->setCuit($cuit);
-        $param->setOperatoryCode($operatory->getCode());
-
-        $total = $calculator->calculate($param);
-
-        if ($total) {
-            if ($operatory->getHasSecure()) {
-                $total += $subtotal * $this->getConfigData('insurance_percentage') / 100;
-            }
-
-            $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
-            if ($shouldAddTax) {
-                // @todo use custom shipping tax configurable on backend
-                $total = 1.21 * floatval($total);
-            }
-
-            /** @var \Magento\Quote\Model\Quote\Address\RateResult\Method $method */
-            $method = $this->_rateMethodFactory->create();
-            $method->setCarrier($this->_code);
-            $method->setCarrierTitle($this->getConfigData('title'));
-            $method->setMethod($operatoryCode);
-
-            $shippingPrice = $total;
-
-            $_freeShipping = false;
-            if ($this->getRequest()->getFreeShipping() === true ||
-                $this->getRequest()->getPackageQty() == $freeBoxes
-            ) {
-                $_freeShipping = true;
-                $shippingPrice = 0.0;
-            } elseif ($operatory->getPaysOnDestination()) {
-                $shippingPrice = 0.0;
-            }
-
-            // if (!$_freeShipping) {
-            //     $method->setRealPrice(round((string) $total, 2));
-            // } else {
-            //     $method->setRealPrice($shippingPrice);
-            // }
-
-            if ($description) {
-                $method->setMethodTitle($description);
-            } else {
-                if ($operatory->getPaysOnDestination()) {
-                    $methodTitle = __('%s. Pay %s to courrier.',
-                        $operatory->getName(),
-                        $method->getData('price')
-                        // Mage::helper('core')->currency(
-                        //     $total,
-                        //     true,
-                        //     false
-                        // )
-                    );
-                    $method->setMethodTitle($methodTitle);
-                } else {
-                    $method->setMethodTitle($operatory->getName());
-                }
-            }
-
-            $method->setPrice($shippingPrice);
-            $method->setCost($shippingPrice);
-
-            $rateResult->append($method);
+        $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
+        if ($shouldAddTax) {
+            // @todo use custom shipping tax configurable on backend
+            $total = 1.21 * floatval($total);
         }
+
+        /** @var \Magento\Quote\Model\Quote\Address\RateResult\Method $method */
+        $method = $this->_rateMethodFactory->create();
+        $method->setCarrier($this->_code);
+        $method->setCarrierTitle($this->getConfigData('title'));
+        $method->setMethod($operatoryCode);
+
+        $shippingPrice = $total;
+
+        if ($operatory->getPaysOnDestination()) {
+            $shippingPrice = 0.0;
+        }
+
+        if ($description) {
+            $_method_title = __(
+                '%1 (%2 dias)',
+                // Nombre
+                $description,
+                // Dias
+                $plazoEntrega
+            );
+            $method->setMethodTitle($_method_title);
+        } else {
+            if ($operatory->getPaysOnDestination()) {
+                $methodTitle = __('%1. Pay %2 to courrier.',
+                    $operatory->getName(),
+                    $method->getData('price')
+                    // Mage::helper('core')->currency(
+                    //     $total,
+                    //     true,
+                    //     false
+                    // )
+                );
+                $method->setMethodTitle($methodTitle);
+            } else {
+                $_method_title = __(
+                    '%1 (%2 dias)',
+                    // Nombre
+                    $operatory->getName(),
+                    // Dias
+                    $plazoEntrega
+                );
+                $method->setMethodTitle($_method_title);
+            }
+        }
+
+        $method->setPrice($shippingPrice);
+        $method->setCost($shippingPrice);
+
+        $rateResult->append($method);
     }
 
     protected function getStoreConfig($path)

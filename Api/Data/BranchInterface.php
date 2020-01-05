@@ -140,4 +140,14 @@ interface BranchInterface
      * @return int
      */
     public function getActive();
+
+    /**
+     * @return string
+     */
+    public function getFullDescription();
+
+    /**
+     * @return string
+     */
+    public function getFullAddress();
 }

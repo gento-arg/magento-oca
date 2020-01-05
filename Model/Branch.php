@@ -241,4 +241,23 @@ class Branch extends AbstractModel implements BranchInterface
     {
         return $this->getData(BranchInterface::ACTIVE);
     }
+
+    public function getFullDescription()
+    {
+        return sprintf('%s (%s, %s - %s)',
+            $this->getDescription(),
+            $this->getFullAddress(),
+            $this->getCity(),
+            $this->getShortName()
+        );
+    }
+
+    public function getFullAddress()
+    {
+        $return = $this->getAddressStreet() . ' ' . $this->getAddressNumber();
+        if (strlen($this->getAddressFloor()) > 0) {
+            $return .= ' ' . $this->getAddressFloor();
+        }
+        return $return;
+    }
 }

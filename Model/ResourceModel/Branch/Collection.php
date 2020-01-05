@@ -22,4 +22,10 @@ class Collection extends AbstractCollection
             \Gento\Oca\Model\ResourceModel\Branch::class
         );
     }
+
+    public function getActiveList()
+    {
+        return $this->addFieldToFilter('active', ['eq' => true]);
+    }
+
 }

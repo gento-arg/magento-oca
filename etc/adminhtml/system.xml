@@ -48,10 +48,10 @@
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <comment>OCA E-Pak password</comment>
                 </field>
-                <field id="insurance_percentage" translate="label" type="text" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
+                <!-- <field id="insurance_percentage" translate="label" type="text" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Insurance percentage</label>
                     <comment>Only apply to operatories with insurance</comment>
-                </field>
+                </field> -->
                 <field id="days" translate="label" type="text" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Days to send</label>
                     <comment>Days between the order is received and the package is sent to OCA</comment>

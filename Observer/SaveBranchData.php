@@ -47,7 +47,6 @@ class SaveBranchData implements ObserverInterface
 
         foreach ($branchsData as $branchData) {
             try {
-                throw new NoSuchEntityException(__('Probando'));
                 $branch = $this->branchRepository
                     ->getByCode($branchData['code']);
             } catch (NoSuchEntityException $e) {

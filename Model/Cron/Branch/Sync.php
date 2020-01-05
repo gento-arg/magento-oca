@@ -43,23 +43,8 @@ class Sync
         foreach ($operatoryCollection->getUsesIdci() as /** @var \Gento\Oca\Model\Operatory */$operatory) {
             $result = $this->_ocaApi->getBranches($operatory->getCode());
 
-            $branchsData = array_map(function ($row) {
-                return [
-                    'code' => $row['idCentroImposicion'],
-                    'short_name' => $row['Sigla'],
-                    'name' => $row['Descripcion'],
-                    'description' => $row['Descripcion'],
-                    'address_street' => $row['Calle'],
-                    'address_number' => $row['Numero'],
-                    'address_floor' => $row['Piso'],
-                    'city' => $row['Localidad'],
-                    'zipcode' => $row['CodigoPostal'],
-                    'active' => true,
-                ];
-            }, $result);
-
             $this->eventManager->dispatch('gento_oca_get_branch_data', [
-                'branchs_data' => $branchsData,
+                'branchs_data' => $result,
                 'operatory' => $operatory,
             ]);
         }
