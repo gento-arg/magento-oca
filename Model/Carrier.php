@@ -329,27 +329,40 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $request;
     }
 
-    protected function getTracking($tracking)
+    protected function getTracking($trackings)
     {
-        /** @var \Magento\Shipping\Model\Tracking\Result $result */
-        $result = $this->_trackFactory->create();
-        $code = $this->getConfigData('code');
-        $title = $this->getConfigData('title');
-        $url = 'http://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
-        $trackingResults = $this->ocaApi->getTracking($tracking);
-        foreach ($trackingResults as $trackingResult) {
+        if (!is_array($trackings)) {
+            $trackings = [$trackings];
+        }
+
+        foreach ($trackings as $tracking) {
+            /** @var \Magento\Shipping\Model\Tracking\Result $result */
+            $result = $this->_trackFactory->create();
+            $code = $this->getConfigData('code');
+            $title = $this->getConfigData('title');
+            $url = 'https://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
+            $trackingResults = $this->ocaApi->getTracking($tracking);
             /** @var \Magento\Shipping\Model\Tracking\Result\Status $status */
             $status = $this->_trackStatusFactory->create();
-
             $status->setCarrier($code);
             $status->setCarrierTitle($title);
             $status->setTracking($tracking);
-            $status->setStatus($trackingResult['Estado']);
-            $status->setShippedDate($trackingResult['Fecha']);
             $status->setUrl($url . $tracking);
+            $progress = [];
+            foreach ($trackingResults as $trackingResult) {
+                $fecha = new \DateTime($trackingResult['Fecha']);
+
+                $progress[] = [
+                    'deliverylocation' => $trackingResult['Sucursal'],
+                    'deliverydate' => $fecha->format('d-m-Y'),
+                    'deliverytime' => $fecha->format('H:n'),
+                    'activity' => $trackingResult['Estado'],
+                ];
+            }
+            $status->setProgressdetail($progress);
+
             $result->append($status);
         }
-
         return $result;
     }
 }
