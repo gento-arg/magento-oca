@@ -8,7 +8,7 @@
         "magento/module-config": "*",
         "magento/module-ui": "*",
         "magento/framework": "*.*",
-        "gento-arg/oca-php-api": "dev-master"
+        "gento-arg/oca-php-api": "^1.0"
     },
     "license": [
         "OSL-3.0",
