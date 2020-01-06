@@ -9,7 +9,7 @@
         "magento/module-config": "*",
         "magento/module-ui": "*",
         "magento/framework": "*.*",
-        "nerioespina/oca-php-api": "dev-master"
+        "gento-arg/oca-php-api": "dev-master"
     },
     "autoload": {
         "files": [

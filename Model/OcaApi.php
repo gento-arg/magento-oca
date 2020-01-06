@@ -62,7 +62,7 @@ class OcaApi
         $packageValue
     ) {
         $client = new Oca($this->_cuit, $operatoryCode);
-        $tarifa = $client->tarifarEnvioCorporativo(
+        return $client->tarifarEnvioCorporativo(
             floatval($weight),
             $volume,
             $senderZipcode,
@@ -70,12 +70,13 @@ class OcaApi
             $packageQty,
             $packageValue
         );
+    }
 
-        if (count($tarifa) > 0) {
-            return (object) array_shift($tarifa);
-        }
-
-        return null;
+    public function getTracking($trackingCode)
+    {
+        $client = new Oca($this->_cuit);
+        $tracking = $client->trackingPieza($trackingCode);
+        return $tracking;
     }
 
     protected function processBranches($centros)

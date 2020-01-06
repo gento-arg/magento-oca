@@ -2,11 +2,12 @@
 
 namespace Gento\Oca\Model;
 
+use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
-use Magento\Shipping\Model\Carrier\AbstractCarrier;
+use Magento\Shipping\Model\Carrier\AbstractCarrierOnline;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
 
-class Carrier extends AbstractCarrier implements CarrierInterface
+class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
     /**
      * Code of the carrier
@@ -55,6 +56,16 @@ class Carrier extends AbstractCarrier implements CarrierInterface
         \Gento\Oca\Model\OcaApi $ocaApi,
         \Gento\Oca\Model\BranchRepositoryFactory $branchRepositoryFactory,
         \Magento\Framework\Event\ManagerInterface $eventManager,
+        Security $xmlSecurity,
+        \Magento\Shipping\Model\Simplexml\ElementFactory $xmlElFactory,
+        \Magento\Shipping\Model\Tracking\ResultFactory $trackFactory,
+        \Magento\Shipping\Model\Tracking\Result\ErrorFactory $trackErrorFactory,
+        \Magento\Shipping\Model\Tracking\Result\StatusFactory $trackStatusFactory,
+        \Magento\Directory\Model\RegionFactory $regionFactory,
+        \Magento\Directory\Model\CountryFactory $countryFactory,
+        \Magento\Directory\Model\CurrencyFactory $currencyFactory,
+        \Magento\Directory\Helper\Data $directoryData,
+        \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
         array $data = []
     ) {
         $this->_rateResultFactory = $rateResultFactory;
@@ -63,7 +74,24 @@ class Carrier extends AbstractCarrier implements CarrierInterface
         $this->ocaApi = $ocaApi;
         $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
-        parent::__construct($scopeConfig, $rateErrorFactory, $logger, $data);
+        parent::__construct(
+            $scopeConfig,
+            $rateErrorFactory,
+            $logger,
+            $xmlSecurity,
+            $xmlElFactory,
+            $rateResultFactory,
+            $rateMethodFactory,
+            $trackFactory,
+            $trackErrorFactory,
+            $trackStatusFactory,
+            $regionFactory,
+            $countryFactory,
+            $currencyFactory,
+            $directoryData,
+            $stockRegistry,
+            $data
+        );
     }
 
     public function getAllowedMethods()
@@ -279,6 +307,14 @@ class Carrier extends AbstractCarrier implements CarrierInterface
         $rateResult->append($method);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function isTrackingAvailable()
+    {
+        return true;
+    }
+
     protected function getStoreConfig($path)
     {
         return $this->_scopeConfig->getValue(
@@ -286,5 +322,34 @@ class Carrier extends AbstractCarrier implements CarrierInterface
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $this->getStore()
         );
+    }
+
+    protected function _doShipmentRequest(\Magento\Framework\DataObject $request)
+    {
+        return $request;
+    }
+
+    protected function getTracking($tracking)
+    {
+        /** @var \Magento\Shipping\Model\Tracking\Result $result */
+        $result = $this->_trackFactory->create();
+        $code = $this->getConfigData('code');
+        $title = $this->getConfigData('title');
+        $url = 'http://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
+        $trackingResults = $this->ocaApi->getTracking($tracking);
+        foreach ($trackingResults as $trackingResult) {
+            /** @var \Magento\Shipping\Model\Tracking\Result\Status $status */
+            $status = $this->_trackStatusFactory->create();
+
+            $status->setCarrier($code);
+            $status->setCarrierTitle($title);
+            $status->setTracking($tracking);
+            $status->setStatus($trackingResult['Estado']);
+            $status->setShippedDate($trackingResult['Fecha']);
+            $status->setUrl($url . $tracking);
+            $result->append($status);
+        }
+
+        return $result;
     }
 }
