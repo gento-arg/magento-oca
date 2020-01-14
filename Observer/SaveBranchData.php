@@ -10,6 +10,7 @@ use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Psr\Log\LoggerInterface;
 
 class SaveBranchData implements ObserverInterface
 {
@@ -30,14 +31,21 @@ class SaveBranchData implements ObserverInterface
      */
     protected $branchFactory;
 
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
     public function __construct(
         BranchInterfaceFactory $branchFactory,
         BranchRepositoryInterface $branchRepository,
-        DataObjectHelper $dataObjectHelper
+        DataObjectHelper $dataObjectHelper,
+        LoggerInterface $logger
     ) {
         $this->branchFactory = $branchFactory;
         $this->branchRepository = $branchRepository;
         $this->dataObjectHelper = $dataObjectHelper;
+        $this->logger = $logger;
     }
 
     public function execute(EventObserver $observer)
@@ -58,6 +66,7 @@ class SaveBranchData implements ObserverInterface
                     $this->branchRepository->save($branch);
                 } catch (CouldNotSaveException $nse) {
                     // Duplicate branch code
+                    $this->logger->error($nse->getLogMessage(), ['exception' => $nse]);
                 }
             }
         }

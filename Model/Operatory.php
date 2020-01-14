@@ -12,11 +12,9 @@ use Magento\Framework\Model\AbstractModel;
 class Operatory extends AbstractModel implements OperatoryInterface
 {
     /**
-     * Cache tag
-     *
-     * @var string
      */
     const CACHE_TAG = 'gento_oca_operatory';
+
     /**
      * Cache tag
      *

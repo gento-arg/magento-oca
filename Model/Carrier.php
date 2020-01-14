@@ -10,8 +10,6 @@ use Magento\Shipping\Model\Carrier\CarrierInterface;
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
     /**
-     * Code of the carrier
-     *
      * @var string
      */
     protected $_code = 'gento_oca';
@@ -279,7 +277,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $method->setMethodTitle($_method_title);
         } else {
             if ($operatory->getPaysOnDestination()) {
-                $methodTitle = __('%1. Pay %2 to courrier.',
+                $methodTitle = __(
+                    '%1. Pay %2 to courrier.',
                     $operatory->getName(),
                     $method->getData('price')
                     // Mage::helper('core')->currency(

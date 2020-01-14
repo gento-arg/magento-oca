@@ -12,9 +12,6 @@ use Magento\Framework\Api\SearchCriteriaInterface;
 use Psr\Log\LoggerInterface;
 use Magento\Framework\Api\Search\SearchResultInterface;
 
-/**
- * @api
- */
 abstract class AbstractCollection extends DbAbstractCollection implements SearchResultInterface
 {
     /**

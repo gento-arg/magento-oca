@@ -27,5 +27,4 @@ class Collection extends AbstractCollection
     {
         return $this->addFieldToFilter('active', ['eq' => true]);
     }
-
 }

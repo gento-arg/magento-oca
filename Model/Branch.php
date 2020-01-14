@@ -12,11 +12,10 @@ use Magento\Framework\Model\AbstractModel;
 class Branch extends AbstractModel implements BranchInterface
 {
     /**
-     * Cache tag
-     *
      * @var string
      */
     const CACHE_TAG = 'gento_oca_branch';
+
     /**
      * Cache tag
      *
@@ -244,7 +243,8 @@ class Branch extends AbstractModel implements BranchInterface
 
     public function getFullDescription()
     {
-        return sprintf('%s (%s, %s - %s)',
+        return sprintf(
+            '%s (%s, %s - %s)',
             $this->getDescription(),
             $this->getFullAddress(),
             $this->getCity(),
