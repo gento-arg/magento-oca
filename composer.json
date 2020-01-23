@@ -4,11 +4,12 @@
     "type": "magento2-module",
     "require": {
         "php": ">=7.2",
+        "gento-arg/module-core": "*",
+        "gento-arg/oca-php-api": "^1.0",
+        "magento/framework": "*.*",
         "magento/module-backend": "*",
         "magento/module-config": "*",
-        "magento/module-ui": "*",
-        "magento/framework": "*.*",
-        "gento-arg/oca-php-api": "^1.0"
+        "magento/module-ui": "*"
     },
     "license": [
         "OSL-3.0",
@@ -21,5 +22,8 @@
         "psr-4": {
             "Gento\\Oca\\": ""
         }
+    },
+    "config": {
+        "sort-packages": true
     }
 }
