@@ -6,6 +6,7 @@
                 <active>0</active>
                 <model>Gento\Oca\Model\Carrier</model>
                 <title>OCA</title>
+                <max_package_weight>50</max_package_weight>
             </gento_oca>
         </carriers>
     </default>

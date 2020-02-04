@@ -64,6 +64,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         \Magento\Directory\Model\CurrencyFactory $currencyFactory,
         \Magento\Directory\Helper\Data $directoryData,
         \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
+        \Magento\Framework\Pricing\Helper\Data $pricingHelper,
         array $data = []
     ) {
         $this->_rateResultFactory = $rateResultFactory;
@@ -72,6 +73,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $this->ocaApi = $ocaApi;
         $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
+        $this->pricingHelper = $pricingHelper;
         parent::__construct(
             $scopeConfig,
             $rateErrorFactory,
@@ -266,39 +268,28 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $shippingPrice = 0.0;
         }
 
-        if ($description) {
-            $_method_title = __(
+        if (!$description) {
+            $description = $operatory->getName();
+        }
+
+        if ($operatory->getPaysOnDestination()) {
+            $methodTitle = __(
+                '%1. (%2 dias). Pagar %3 en destino.',
+                $description,
+                // Dias
+                $plazoEntrega,
+                $this->pricingHelper->currency($total, true, false)
+            );
+        } else {
+            $methodTitle = __(
                 '%1 (%2 dias)',
                 // Nombre
                 $description,
                 // Dias
                 $plazoEntrega
             );
-            $method->setMethodTitle($_method_title);
-        } else {
-            if ($operatory->getPaysOnDestination()) {
-                $methodTitle = __(
-                    '%1. Pay %2 to courrier.',
-                    $operatory->getName(),
-                    $method->getData('price')
-                    // Mage::helper('core')->currency(
-                    //     $total,
-                    //     true,
-                    //     false
-                    // )
-                );
-                $method->setMethodTitle($methodTitle);
-            } else {
-                $_method_title = __(
-                    '%1 (%2 dias)',
-                    // Nombre
-                    $operatory->getName(),
-                    // Dias
-                    $plazoEntrega
-                );
-                $method->setMethodTitle($_method_title);
-            }
         }
+        $method->setMethodTitle($methodTitle);
 
         $method->setPrice($shippingPrice);
         $method->setCost($shippingPrice);
