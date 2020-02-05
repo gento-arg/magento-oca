@@ -18,6 +18,30 @@ bin/magento setup:upgrade
 bin/magento cache:clean
 ```
 
+## Configuration
+
+### Setting CUIT number
+
+OCA use `CUIT` to identify his customers and validate contracts. To config `CUIT`, just go to `Stores -> Configuration` and select `Sales -> Tax`, in that form you will see a field `CUIT` under the group `Default Tax Destination Calculation`.
+
+
+### Create operatories
+
+On the menu `GENTo -> Operatories`, add all the operatories that you want to work with.
+
+#### Fields
+
+* **Name**: This will show to the customer on the shipping method list.
+* **Code**: The OCA contract number
+* **Active**: Enable or disable the operatory
+* **Uses id centro imposicion**: This indicate that the operatory will use branches.
+* **Pays on destination branch**: If its true, the amount of shipping will not charge to customer order, but will be informed.
+
+### Branches
+
+The branches will be create automatically, but you can control which one not to use by change the `active` attribute to `no`, or maybe changing some data. 
+*Warning: If you change the code it may not work properly.* 
+
 ## Uninstall
 
 ```
