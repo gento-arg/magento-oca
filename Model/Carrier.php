@@ -2,10 +2,34 @@
 
 namespace Gento\Oca\Model;
 
+use Gento\Oca\Model\BranchRepositoryFactory;
+use Gento\Oca\Model\Config\Source\UnitsAttribute;
+use Gento\Oca\Model\OcaApi;
+use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product;
+use Magento\Directory\Helper\Data as DirectoryData;
+use Magento\Directory\Model\CountryFactory;
+use Magento\Directory\Model\CurrencyFactory;
+use Magento\Directory\Model\RegionFactory;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\DataObject;
+use Magento\Framework\Event\ManagerInterface;
+use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
+use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory as RateResultErrorFactory;
+use Magento\Quote\Model\Quote\Address\RateResult\MethodFactory;
 use Magento\Shipping\Model\Carrier\AbstractCarrierOnline;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
+use Magento\Shipping\Model\Rate\Result;
+use Magento\Shipping\Model\Rate\ResultFactory as RateFactory;
+use Magento\Shipping\Model\Simplexml\ElementFactory;
+use Magento\Shipping\Model\Tracking\ResultFactory;
+use Magento\Shipping\Model\Tracking\Result\ErrorFactory as ResultErrorFactory;
+use Magento\Shipping\Model\Tracking\Result\StatusFactory;
+use Psr\Log\LoggerInterface;
 
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
@@ -15,58 +39,65 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     protected $_code = 'gento_oca';
 
     /**
-     * @var \Magento\Shipping\Model\Rate\ResultFactory
+     * @var ProductRepositoryInterface
+     */
+    protected $productRepository;
+
+    /**
+     * @var ResultFactory
      */
     protected $_rateResultFactory;
 
     /**
-     * @var \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory
+     * @var MethodFactory
      */
     protected $_rateMethodFactory;
 
     /**
-     * @var \Gento\Oca\Model\OperatoryFactory
+     * @var OperatoryFactory
      */
     protected $_operatoryCollectionFactory;
 
     /**
-     * @param \Gento\Oca\Model\OcaApi
+     * @param OcaApi
      */
     private $ocaApi;
 
     /**
-     * @param \Gento\Oca\Model\BranchRepositoryFactory
+     * @param BranchRepositoryFactory
      */
     private $branchRepositoryFactory;
 
     /**
-     * @param \Magento\Framework\Event\ManagerInterface
+     * @param ManagerInterface
      */
     private $eventManager;
 
     public function __construct(
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory $rateErrorFactory,
-        \Psr\Log\LoggerInterface $logger,
-        \Magento\Shipping\Model\Rate\ResultFactory $rateResultFactory,
-        \Magento\Quote\Model\Quote\Address\RateResult\MethodFactory $rateMethodFactory,
-        \Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory $operatoryCollectionFactory,
-        \Gento\Oca\Model\OcaApi $ocaApi,
-        \Gento\Oca\Model\BranchRepositoryFactory $branchRepositoryFactory,
-        \Magento\Framework\Event\ManagerInterface $eventManager,
+        ProductRepositoryInterface $productRepository,
+        ScopeConfigInterface $scopeConfig,
+        RateResultErrorFactory $rateErrorFactory,
+        LoggerInterface $logger,
+        RateFactory $rateResultFactory,
+        MethodFactory $rateMethodFactory,
+        CollectionFactory $operatoryCollectionFactory,
+        OcaApi $ocaApi,
+        BranchRepositoryFactory $branchRepositoryFactory,
+        ManagerInterface $eventManager,
         Security $xmlSecurity,
-        \Magento\Shipping\Model\Simplexml\ElementFactory $xmlElFactory,
-        \Magento\Shipping\Model\Tracking\ResultFactory $trackFactory,
-        \Magento\Shipping\Model\Tracking\Result\ErrorFactory $trackErrorFactory,
-        \Magento\Shipping\Model\Tracking\Result\StatusFactory $trackStatusFactory,
-        \Magento\Directory\Model\RegionFactory $regionFactory,
-        \Magento\Directory\Model\CountryFactory $countryFactory,
-        \Magento\Directory\Model\CurrencyFactory $currencyFactory,
-        \Magento\Directory\Helper\Data $directoryData,
-        \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
-        \Magento\Framework\Pricing\Helper\Data $pricingHelper,
+        ElementFactory $xmlElFactory,
+        ResultFactory $trackFactory,
+        ResultErrorFactory $trackErrorFactory,
+        StatusFactory $trackStatusFactory,
+        RegionFactory $regionFactory,
+        CountryFactory $countryFactory,
+        CurrencyFactory $currencyFactory,
+        DirectoryData $directoryData,
+        StockRegistryInterface $stockRegistry,
+        PricingHelperData $pricingHelper,
         array $data = []
     ) {
+        $this->productRepository = $productRepository;
         $this->_rateResultFactory = $rateResultFactory;
         $this->_rateMethodFactory = $rateMethodFactory;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
@@ -120,10 +151,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $rateResult = $this->_rateResultFactory->create();
 
         $volume = 0;
-        if ($volume == 0) {
-            $volume = $this->getConfigData("min_box_volume");
-        }
-
         $freeBoxes = 0;
         $weight = floatval($request->getPackageWeight());
 
@@ -135,7 +162,15 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 if ($item->getFreeShipping() && !$item->getProduct()->isVirtual()) {
                     $freeBoxes += $item->getQty();
                 }
+
+                if (!$item->getProduct()->isVirtual()) {
+                    $volume += $this->calculateVolume($item->getProduct());
+                }
             }
+        }
+
+        if ($volume == 0) {
+            $volume = $this->getConfigData("volume/min");
         }
 
         $shippingPrice = ($request->getPackageQty() * $price) - ($freeBoxes * $price);
@@ -171,7 +206,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
     public function processOperatory(
         $operatory,
-        \Magento\Shipping\Model\Rate\Result $rateResult,
+        Result $rateResult,
         $weight,
         $volume,
         $senderZipcode,
@@ -314,7 +349,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         );
     }
 
-    protected function _doShipmentRequest(\Magento\Framework\DataObject $request)
+    protected function _doShipmentRequest(DataObject $request)
     {
         return $request;
     }
@@ -354,5 +389,43 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result->append($status);
         }
         return $result;
+    }
+
+    protected function calculateVolume(Product $product)
+    {
+        $attrs = ['width', 'height', 'length'];
+
+        foreach ($attrs as $att) {
+            ${$att . 'Att'} = $this->getConfigData("volume/" . $att);
+        }
+
+        if (!$widthAtt || !$heightAtt || !$lengthAtt) {
+            return 0;
+        }
+
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        $unitValue = $this->getConfigData("volume/unit");
+        $factor = 1;
+        if ($unitValue == UnitsAttribute::UNIT_CENTIMETER) {
+            $factor = 100;
+        } elseif ($unitValue == UnitsAttribute::UNIT_MILLIMETER) {
+            $factor = 1000;
+        }
+        foreach ($attrs as $att) {
+            ${$att} = (float) $product->getData(${$att . 'Att'});
+            if (${$att} <= 0) {
+                return 0;
+            }
+            ${$att} /= $factor;
+        }
+
+        $volume = $width * $height * $length;
+        if ($volume == 0) {
+            return $volume;
+        }
+
+        return $volume;
     }
 }
