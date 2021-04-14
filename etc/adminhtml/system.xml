@@ -36,6 +36,10 @@
                 <field id="sort_order" translate="label" type="text" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Sort Order</label>
                 </field>
+                <field id="account_number" translate="label" type="text" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Account number</label>
+                    <comment>OCA E-Pak account number</comment>
+                </field>
                 <field id="username" translate="label" type="text" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Username</label>
                     <comment>OCA E-Pak username</comment>

@@ -2,13 +2,12 @@
 
 namespace Gento\Oca\Model;
 
-use Gento\Oca\Model\BranchRepositoryFactory;
+use DateTime;
 use Gento\Oca\Model\Config\Source\UnitsAttribute;
-use Gento\Oca\Model\OcaApi;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Directory\Model\CurrencyFactory;
@@ -20,15 +19,18 @@ use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
 use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory as RateResultErrorFactory;
+use Magento\Quote\Model\Quote\Address\RateResult\Method;
 use Magento\Quote\Model\Quote\Address\RateResult\MethodFactory;
 use Magento\Shipping\Model\Carrier\AbstractCarrierOnline;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
 use Magento\Shipping\Model\Rate\Result;
 use Magento\Shipping\Model\Rate\ResultFactory as RateFactory;
 use Magento\Shipping\Model\Simplexml\ElementFactory;
-use Magento\Shipping\Model\Tracking\ResultFactory;
 use Magento\Shipping\Model\Tracking\Result\ErrorFactory as ResultErrorFactory;
+use Magento\Shipping\Model\Tracking\Result\Status;
 use Magento\Shipping\Model\Tracking\Result\StatusFactory;
+use Magento\Shipping\Model\Tracking\ResultFactory;
+use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
 
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
@@ -204,6 +206,44 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $rateResult;
     }
 
+    protected function calculateVolume(Product $product)
+    {
+        $attrs = ['width', 'height', 'length'];
+
+        foreach ($attrs as $att) {
+            ${$att . 'Att'} = $this->getConfigData("volume/" . $att);
+        }
+
+        if (!$widthAtt || !$heightAtt || !$lengthAtt) {
+            return 0;
+        }
+
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        $unitValue = $this->getConfigData("volume/unit");
+        $factor = 1;
+        if ($unitValue == UnitsAttribute::UNIT_CENTIMETER) {
+            $factor = 100;
+        } elseif ($unitValue == UnitsAttribute::UNIT_MILLIMETER) {
+            $factor = 1000;
+        }
+        foreach ($attrs as $att) {
+            ${$att} = (float) $product->getData(${$att . 'Att'});
+            if (${$att} <= 0) {
+                return 0;
+            }
+            ${$att} /= $factor;
+        }
+
+        $volume = $width * $height * $length;
+        if ($volume == 0) {
+            return $volume;
+        }
+
+        return $volume;
+    }
+
     public function processOperatory(
         $operatory,
         Result $rateResult,
@@ -240,12 +280,12 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             ]);
 
             /**
-             * @var \Gento\Oca\Model\BranchRepository $branchRepository
+             * @var BranchRepository $branchRepository
              */
             $branchRepository = $this->branchRepositoryFactory->create();
             foreach ($branches as $branchData) {
                 /**
-                 * @var \Gento\Oca\Model\Branch $branch
+                 * @var Branch $branch
                  */
                 $branch = $branchRepository->getByCode($branchData['code']);
                 if (!$branch->getActive()) {
@@ -291,7 +331,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $total = 1.21 * floatval($total);
         }
 
-        /** @var \Magento\Quote\Model\Quote\Address\RateResult\Method $method */
+        /** @var Method $method */
         $method = $this->_rateMethodFactory->create();
         $method->setCarrier($this->_code);
         $method->setCarrierTitle($this->getConfigData('title'));
@@ -332,6 +372,15 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $rateResult->append($method);
     }
 
+    protected function getStoreConfig($path)
+    {
+        return $this->_scopeConfig->getValue(
+            $path,
+            ScopeInterface::SCOPE_STORE,
+            $this->getStore()
+        );
+    }
+
     /**
      * @inheritdoc
      */
@@ -340,17 +389,35 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return true;
     }
 
-    protected function getStoreConfig($path)
+    public function isShippingLabelsAvailable()
     {
-        return $this->_scopeConfig->getValue(
-            $path,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $this->getStore()
-        );
+        return true;
+    }
+
+    /**
+     * @param DataObject|null $params
+     * @return array
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        return [
+            // @TODO: Tal vez haga falta agregar aca las diferentes operaciones
+            'gento_oca' => $this->getConfigData('title')
+        ];
     }
 
     protected function _doShipmentRequest(DataObject $request)
     {
+        $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
+        $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
+        $this->ocaApi->requestShipment($request);
+
+        /**
+         * return: DataObject
+         *  tracking_number
+         *  shipping_label_content
+         */
+        throw new \Exception();
         return $request;
     }
 
@@ -367,7 +434,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $title = $this->getConfigData('title');
             $url = 'https://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
             $trackingResults = $this->ocaApi->getTracking($tracking);
-            /** @var \Magento\Shipping\Model\Tracking\Result\Status $status */
+            /** @var Status $status */
             $status = $this->_trackStatusFactory->create();
             $status->setCarrier($code);
             $status->setCarrierTitle($title);
@@ -375,7 +442,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $status->setUrl($url . $tracking);
             $progress = [];
             foreach ($trackingResults as $trackingResult) {
-                $fecha = new \DateTime($trackingResult['Fecha']);
+                $fecha = new DateTime($trackingResult['Fecha']);
 
                 $progress[] = [
                     'deliverylocation' => $trackingResult['Sucursal'],
@@ -389,43 +456,5 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result->append($status);
         }
         return $result;
-    }
-
-    protected function calculateVolume(Product $product)
-    {
-        $attrs = ['width', 'height', 'length'];
-
-        foreach ($attrs as $att) {
-            ${$att . 'Att'} = $this->getConfigData("volume/" . $att);
-        }
-
-        if (!$widthAtt || !$heightAtt || !$lengthAtt) {
-            return 0;
-        }
-
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
-
-        $unitValue = $this->getConfigData("volume/unit");
-        $factor = 1;
-        if ($unitValue == UnitsAttribute::UNIT_CENTIMETER) {
-            $factor = 100;
-        } elseif ($unitValue == UnitsAttribute::UNIT_MILLIMETER) {
-            $factor = 1000;
-        }
-        foreach ($attrs as $att) {
-            ${$att} = (float) $product->getData(${$att . 'Att'});
-            if (${$att} <= 0) {
-                return 0;
-            }
-            ${$att} /= $factor;
-        }
-
-        $volume = $width * $height * $length;
-        if ($volume == 0) {
-            return $volume;
-        }
-
-        return $volume;
     }
 }
