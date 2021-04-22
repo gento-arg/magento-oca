@@ -138,22 +138,14 @@ class OcaApi
         $request->setOperativa($operativa);
         $request->setCentroCosto($centroCosto);
         $request->setCentroImposicion($centroImposicion);
+        $xmlOr = $this->getXmlOR($request);
+        $xmlOr = str_replace(PHP_EOL, '', $xmlOr);
+        file_put_contents('ingresoor.xml', $xmlOr);
         $ingresoOR = $client->ingresoORMultiplesRetiros(
             $this->getUsername(),
             $this->getPassword(),
-            $this->getXmlOR($request)
+            $xmlOr
         );
-    }
-
-    protected function getUsername()
-    {
-        return $this->scopeConfig->getValue('carriers/gento_oca/username');
-    }
-
-    protected function getPassword()
-    {
-        $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
-        return $this->encryptor->decrypt($password);
     }
 
     protected function getXmlOR(DataObject $request)
@@ -174,7 +166,7 @@ class OcaApi
         }
         $paquetes = ['paquete' => $paquetes];
 
-        return $this->arrayToXML->buildXML([
+        $xmlData = [
             'cabecera' => [
                 '@ver' => '2.0',
                 '@nrocuenta' => $this->getAccountNumber(),
@@ -190,14 +182,21 @@ class OcaApi
                     '@provincia' => $request->getShipperAddressProvince(),
                     '@contacto' => $request->getShipperContactPersonName(),
                     '@email' => $request->getShipperEmail(),
+                    '@solicitante' => '',
+                    '@observaciones' => '',
                     '@centrocosto' => $request->getCentroCosto(),
-                    '@idfranjahoraria' => '1', // @TODO
-                    '@idcentroimposicionorigen' => $request->getCentroImposicion(), // @TODO
+                    '@centrocosto' => '',
+                    '@idfranjahoraria' => '3', // @TODO
+                    '@idcentroimposicionorigen' => 0,
+                    '@idcentroimposicionorigen' => '1',
                     '@fecha' => $fecha->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
                     'envios' => [
                         'envio' => [
                             '@idoperativa' => $request->getOperativa(),
-                            '@nroremito' => $request->getOperativa(),
+                            '@nroremito' => sprintf('%s-%s',
+                                $request->getOrderShipment()->getOrder()->getIncrementId(),
+                                $request->getPackageId()
+                            ),
                             'destinatario' => [
                                 '@apellido' => $request->getRecipientContactPersonLastName(),
                                 '@nombre' => $request->getRecipientContactPersonFirstName(),
@@ -212,17 +211,49 @@ class OcaApi
                                 '@email' => $request->getRecipientEmail(),
                                 '@idci' => $request->getCentroImposicion(),
                                 '@celular' => '', // @TODO
+                                '@observaciones' => '',
                             ],
                             'paquetes' => $paquetes
                         ]
                     ]
                 ]
             ]
-        ], 'ROWS');
+        ];
+
+        $xmlData['origenes']['origen']['@calle'] = 'Crespo';
+        $xmlData['origenes']['origen']['@nro'] = 1014;
+        $xmlData['origenes']['origen']['@provincia'] = 'SANTA FE';
+        $xmlData['origenes']['origen']['@contacto'] = 'Jose Fernandez';
+        $xmlData['origenes']['origen']['@email'] = 'info@noaflojes.com.ar';
+        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@calle'] = 'Alberdi';
+        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@nro'] = 525;
+        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@provincia'] = 'BUENOS AIRES';
+        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@apellido'] = 'Canepa';
+        return $this->arrayToXML->buildXML($xmlData, 'ROWS');
     }
 
     protected function getAccountNumber()
     {
         return $this->scopeConfig->getValue('carriers/gento_oca/account_number');
+    }
+
+    protected function getUsername()
+    {
+        return $this->scopeConfig->getValue('carriers/gento_oca/username');
+    }
+
+    protected function getPassword()
+    {
+        $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
+        return $this->encryptor->decrypt($password);
+    }
+
+    public function getOperativas()
+    {
+        $client = new Oca($this->_cuit);
+        return $client->getOperativas(
+            $this->getUsername(),
+            $this->getPassword()
+        );
     }
 }

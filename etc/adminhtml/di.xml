@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <type name="Gento\Oca\Controller\Adminhtml\Operatory\Index">
         <arguments>
             <argument name="activeMenuItem" xsi:type="string">Gento_Oca::operatories</argument>
@@ -8,7 +9,8 @@
     </type>
     <type name="Gento\Oca\Controller\Adminhtml\Operatory\MassDelete">
         <arguments>
-            <argument name="collectionProvider" xsi:type="object">Gento\Oca\Model\Operatory\CollectionProvider</argument>
+            <argument name="collectionProvider"
+                      xsi:type="object">Gento\Oca\Model\Operatory\CollectionProvider</argument>
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Operatory\Executor\Delete</argument>
             <argument name="successMessage" xsi:type="string">A total of %1 Operatories have been deleted.</argument>
             <argument name="errorMessage" xsi:type="string" translate="true">An error occurred while deleting Operatories.</argument>
@@ -34,7 +36,8 @@
             <argument name="collectionProvider" xsi:type="object">Gento\Oca\Model\Branch\CollectionProvider</argument>
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Branch\Executor\Delete</argument>
             <argument name="successMessage" xsi:type="string">A total of %1 Branches have been deleted.</argument>
-            <argument name="errorMessage" xsi:type="string" translate="true">An error occurred while deleting Branches.</argument>
+            <argument name="errorMessage" xsi:type="string"
+                      translate="true">An error occurred while deleting Branches.</argument>
         </arguments>
     </type>
     <type name="Gento\Oca\Controller\Adminhtml\Branch\Delete">

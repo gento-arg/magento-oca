@@ -1,9 +1,11 @@
 <?xml version="1.0" ?>
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="admin-1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="admin-1column"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceBlock name="report">
             <arguments>
-                <argument name="bugreport_url" xsi:type="string">https://github.com/gento-arg/magento-oca/issues</argument>
+                <argument name="bugreport_url"
+                          xsi:type="string">https://github.com/gento-arg/magento-oca/issues</argument>
             </arguments>
         </referenceBlock>
     </body>

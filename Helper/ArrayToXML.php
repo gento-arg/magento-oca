@@ -21,7 +21,7 @@ class ArrayToXML
      * @param string $xmlVersion XML Version, default 1.0
      * @param string $xmlEncoding XML Encoding, default UTF-8
      */
-    public function __construct($xmlVersion = '1.0', $xmlEncoding = 'UTF-8')
+    public function __construct($xmlVersion = '1.0', $xmlEncoding = 'iso-8859-1')
     {
         $this->version = $xmlVersion;
         $this->encoding = $xmlEncoding;
@@ -42,7 +42,7 @@ class ArrayToXML
         }
         $xml = new XmlWriter();
         $xml->openMemory();
-        $xml->startDocument($this->version, $this->encoding);
+        $xml->startDocument($this->version, $this->encoding, 'yes');
         $xml->startElement($startElement);
 
         $data = $this->writeAttr($xml, $data);
@@ -149,6 +149,6 @@ class ArrayToXML
      */
     protected function isAssoc($array)
     {
-        return (bool) count(array_filter(array_keys($array), 'is_string'));
+        return (bool)count(array_filter(array_keys($array), 'is_string'));
     }
 }

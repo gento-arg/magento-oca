@@ -3,6 +3,8 @@
 namespace Gento\Oca\Model;
 
 use DateTime;
+use Exception;
+use Gento\Oca\Helper\Data;
 use Gento\Oca\Model\Config\Source\UnitsAttribute;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
@@ -15,7 +17,9 @@ use Magento\Directory\Model\RegionFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
+use Magento\Framework\Registry;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
 use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory as RateResultErrorFactory;
@@ -75,6 +79,11 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     private $eventManager;
 
+    /**
+     * @var Data
+     */
+    private $helper;
+
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ScopeConfigInterface $scopeConfig,
@@ -83,6 +92,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         RateFactory $rateResultFactory,
         MethodFactory $rateMethodFactory,
         CollectionFactory $operatoryCollectionFactory,
+        Registry $coreRegistry,
         OcaApi $ocaApi,
         BranchRepositoryFactory $branchRepositoryFactory,
         ManagerInterface $eventManager,
@@ -97,16 +107,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         DirectoryData $directoryData,
         StockRegistryInterface $stockRegistry,
         PricingHelperData $pricingHelper,
+        Data $helper,
         array $data = []
     ) {
         $this->productRepository = $productRepository;
         $this->_rateResultFactory = $rateResultFactory;
         $this->_rateMethodFactory = $rateMethodFactory;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
+        $this->_coreRegistry = $coreRegistry;
         $this->ocaApi = $ocaApi;
         $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
         $this->pricingHelper = $pricingHelper;
+        $this->helper = $helper;
         parent::__construct(
             $scopeConfig,
             $rateErrorFactory,
@@ -208,40 +221,12 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
     protected function calculateVolume(Product $product)
     {
-        $attrs = ['width', 'height', 'length'];
-
-        foreach ($attrs as $att) {
-            ${$att . 'Att'} = $this->getConfigData("volume/" . $att);
-        }
-
-        if (!$widthAtt || !$heightAtt || !$lengthAtt) {
-            return 0;
-        }
-
         /** @var Product $product */
         $product = $this->productRepository->getById($product->getId());
 
-        $unitValue = $this->getConfigData("volume/unit");
-        $factor = 1;
-        if ($unitValue == UnitsAttribute::UNIT_CENTIMETER) {
-            $factor = 100;
-        } elseif ($unitValue == UnitsAttribute::UNIT_MILLIMETER) {
-            $factor = 1000;
-        }
-        foreach ($attrs as $att) {
-            ${$att} = (float) $product->getData(${$att . 'Att'});
-            if (${$att} <= 0) {
-                return 0;
-            }
-            ${$att} /= $factor;
-        }
+        list($width, $height, $length) = $this->helper->getProductSize($product);
 
-        $volume = $width * $height * $length;
-        if ($volume == 0) {
-            return $volume;
-        }
-
-        return $volume;
+        return $width * $height * $length;
     }
 
     public function processOperatory(
@@ -270,7 +255,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
         $quoteValue = $tarifa->Total;
 
-        $plazoEntrega = $tarifa->PlazoEntrega + (int) $this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
         if ($operatory->getUsesIdci()) {
             $branches = $this->ocaApi->getBranchesZipCode($operatory->getCode(), $receiverZipcode);
 
@@ -400,24 +385,41 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     public function getContainerTypes(DataObject $params = null): array
     {
-        return [
-            // @TODO: Tal vez haga falta agregar aca las diferentes operaciones
-            'gento_oca' => $this->getConfigData('title')
-        ];
+        $operativas = $this->ocaApi->getOperativas();
+        $containers = [];
+
+        foreach ($operativas as $operativa) {
+            $idOperativa = $operativa['IdOperativa'];
+            $descripcion = $operativa['Descripcion'];
+            $descripcion = str_replace($idOperativa . ' - ', '', $descripcion);
+            $containers['gento_oca_' . $idOperativa] = sprintf('OCA - %s (%s)', $descripcion, $idOperativa);
+        }
+
+        return $containers;
     }
 
+    /**
+     * @param DataObject $request
+     * @return mixed
+     * @throws LocalizedException
+     */
     protected function _doShipmentRequest(DataObject $request)
     {
-        $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
-        $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
-        $this->ocaApi->requestShipment($request);
+        try {
+            $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
+            $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
+
+            $this->ocaApi->requestShipment($request);
+        } catch (Exception $e) {
+            throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
+        }
 
         /**
          * return: DataObject
          *  tracking_number
          *  shipping_label_content
          */
-        throw new \Exception();
+        throw new Exception();
         return $request;
     }
 
