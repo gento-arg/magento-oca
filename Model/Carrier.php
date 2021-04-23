@@ -310,7 +310,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     public function getContainerTypes(DataObject $params = null): array
     {
-        $operativas = $this->ocaApi->getOperativas();
+        $operativas = $this->ocaApi->getOperatives();
         $containers = [];
 
         foreach ($operativas as $operativa) {

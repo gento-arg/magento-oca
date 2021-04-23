@@ -4,22 +4,28 @@ namespace Gento\Oca\Model;
 
 use DOMDocument;
 use DOMXPath;
+use Exception;
 use Gento\Oca\Helper\ArrayToXML;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
 use Oca;
 use Zend_Date;
 
 class OcaApi
 {
-    const XML_PATH_SERVICE_URL = 'carriers/gento_oca/elocker_service_url';
-    const XML_PATH_CUIT = 'carriers/gento_oca/cuit';
     const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
     const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
+    const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
+    const WS_MULTI_INGRESO_OR = 'IngresoORMultiplesRetiros';
+    const WS_OPERATIVES_BY_USR = 'GetOperativasByUsuario';
     const WS_TARIFAR_ENVIO_CORPORATIVO = 'Tarifar_Envio_Corporativo';
     const WS_TRACKING_PIEZA = 'Tracking_Pieza';
+    const XML_PATH_CUIT = 'carriers/gento_oca/cuit';
+    const XML_PATH_EPAK_SERVICE_URL = 'carriers/gento_oca/elocker_service_url';
+    const XML_PATH_SERVICE_URL = 'carriers/gento_oca/service_url';
     /**
      * @var ScopeConfigInterface
      */
@@ -41,6 +47,13 @@ class OcaApi
      */
     protected $_cuit;
 
+    /**
+     * OcaApi constructor.
+     * @param ScopeConfigInterface $scopeConfig
+     * @param ArrayToXML $arrayToXML
+     * @param EncryptorInterface $encryptor
+     * @param CurlFactory $curlFactory
+     */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ArrayToXML $arrayToXML,
@@ -53,6 +66,10 @@ class OcaApi
         $this->curlFactory = $curlFactory;
 
         $this->_cuit = $this->getFixedCuit($scopeConfig->getValue(self::XML_PATH_CUIT));
+        $this->_serviceEpakUrl = trim($scopeConfig->getValue(self::XML_PATH_EPAK_SERVICE_URL));
+        if ($this->_serviceEpakUrl !== '' && !preg_match('~/$~', $this->_serviceEpakUrl)) {
+            $this->_serviceEpakUrl .= '/';
+        }
         $this->_serviceUrl = trim($scopeConfig->getValue(self::XML_PATH_SERVICE_URL));
         if ($this->_serviceUrl !== '' && !preg_match('~/$~', $this->_serviceUrl)) {
             $this->_serviceUrl .= '/';
@@ -74,7 +91,8 @@ class OcaApi
     }
 
     /**
-     * @return array[]
+     * @param $zipcode
+     * @return array|array[]
      */
     public function getBranchesZipCode($zipcode)
     {
@@ -139,6 +157,10 @@ class OcaApi
         return (object)array_shift($dataSet);
     }
 
+    /**
+     * @param $trackingCode
+     * @return array
+     */
     public function getTracking($trackingCode)
     {
         $data = $this->callPost(self::WS_TRACKING_PIEZA, [
@@ -156,6 +178,9 @@ class OcaApi
         ]);
     }
 
+    /**
+     * @param DataObject $request
+     */
     public function requestShipment(DataObject $request)
     {
         $client = new Oca($this->_cuit);
@@ -166,7 +191,7 @@ class OcaApi
             $centroImposicion = $metodo[1];
         }
 
-        $centros = $client->getCentroCostoPorOperativa($this->_cuit, $operativa);
+        $centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
         $centroCosto = $centros[0]['NroCentroCosto'];
         $request->setOperativa($operativa);
         $request->setCentroCosto($centroCosto);
@@ -181,16 +206,44 @@ class OcaApi
         );
     }
 
-    public function getOperativas()
+    /**
+     * @return array
+     */
+    public function getOperatives()
     {
-        $client = new Oca($this->_cuit);
-        return $client->getOperativas(
-            $this->getUsername(),
-            $this->getPassword()
-        );
+        $data = $this->callPost(self::WS_OPERATIVES_BY_USR, [
+            'usr' => $this->getUsername(),
+            'psw' => $this->getPassword(),
+        ]);
+
+        return $this->loadDataset($data, [
+            'IdOperativa', 'Descripcion', 'ConVolumen',
+            'ConValorDeclarado', 'ASucursal', 'OrigenSucursal',
+        ]);
     }
 
+    /**
+     * @param $cuit
+     * @param $operative
+     * @return array
+     */
+    public function getCostCenterByOperative($cuit, $operative)
+    {
+        $data = $this->callPost(self::WS_COST_CENTER_BY_OP, [
+            'CUIT' => $cuit,
+            'Operativa' => $operative,
+        ], false);
 
+        return $this->loadDataset($data, [
+            'IdOperativa', 'Descripcion', 'ConVolumen',
+            'ConValorDeclarado', 'ASucursal', 'OrigenSucursal',
+        ]);
+    }
+
+    /**
+     * @param $cuit
+     * @return false|string
+     */
     protected function getFixedCuit($cuit)
     {
         if (!$cuit || strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
@@ -200,6 +253,10 @@ class OcaApi
         return substr($cuit, 0, 2) . '-' . substr($cuit, 2, 8) . '-' . substr($cuit, 10);
     }
 
+    /**
+     * @param $centros
+     * @return array|array[]
+     */
     protected function processBranches($centros)
     {
         array_walk($centros, function ($item, $key) use (&$centros) {
@@ -225,8 +282,22 @@ class OcaApi
         }, $centros);
     }
 
+    /**
+     * @param DataObject $request
+     * @return string
+     * @throws Exception
+     */
     protected function getXmlOR(DataObject $request)
     {
+        // Determinar los siguientes casos:
+        /**
+         * Sucursal a Sucursal
+         * Sucursal a Domicilio
+         * Domicilio a Domicilio
+         * Domicilio a Sucursal
+         */
+
+
         $fecha = new Zend_Date();
         $paquetes = [];
         foreach ($request->getPackages() as $package) {
@@ -297,34 +368,48 @@ class OcaApi
             ]
         ];
 
-        $xmlData['origenes']['origen']['@calle'] = 'Crespo';
-        $xmlData['origenes']['origen']['@nro'] = 1014;
-        $xmlData['origenes']['origen']['@provincia'] = 'SANTA FE';
-        $xmlData['origenes']['origen']['@contacto'] = 'Jose Fernandez';
-        $xmlData['origenes']['origen']['@email'] = 'info@noaflojes.com.ar';
-        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@calle'] = 'Alberdi';
-        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@nro'] = 525;
-        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@provincia'] = 'BUENOS AIRES';
-        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@apellido'] = 'Canepa';
+//        $xmlData['origenes']['origen']['@calle'] = 'Crespo';
+//        $xmlData['origenes']['origen']['@nro'] = 1014;
+//        $xmlData['origenes']['origen']['@provincia'] = 'SANTA FE';
+//        $xmlData['origenes']['origen']['@contacto'] = 'Jose Fernandez';
+//        $xmlData['origenes']['origen']['@email'] = 'info@noaflojes.com.ar';
+//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@calle'] = 'Alberdi';
+//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@nro'] = 525;
+//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@provincia'] = 'BUENOS AIRES';
+//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@apellido'] = 'Canepa';
         return $this->arrayToXML->buildXML($xmlData, 'ROWS');
     }
 
+    /**
+     * @return mixed
+     */
     protected function getAccountNumber()
     {
         return $this->scopeConfig->getValue('carriers/gento_oca/account_number');
     }
 
+    /**
+     * @return mixed
+     */
     protected function getUsername()
     {
         return $this->scopeConfig->getValue('carriers/gento_oca/username');
     }
 
+    /**
+     * @return string
+     */
     protected function getPassword()
     {
         $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
         return $this->encryptor->decrypt($password);
     }
 
+    /**
+     * @param $xmlObject
+     * @param $fields
+     * @return array
+     */
     protected function loadDataset($xmlObject, $fields)
     {
         $dom = new DOMDocument();
@@ -338,6 +423,11 @@ class OcaApi
         return $data;
     }
 
+    /**
+     * @param $ci
+     * @param $fields
+     * @return array
+     */
     protected function loadFields($ci, $fields)
     {
         $return = [];
@@ -364,11 +454,30 @@ class OcaApi
         return $return;
     }
 
+    /**
+     * @return Curl
+     */
     protected function getCurlClient()
     {
         return $this->curlFactory->create();
     }
 
+    /**
+     * @param $service
+     * @return string
+     */
+    protected function getServiceEpakUrl($service)
+    {
+        return sprintf('%s%s',
+            $this->_serviceEpakUrl,
+            $service
+        );
+    }
+
+    /**
+     * @param $service
+     * @return string
+     */
     protected function getServiceUrl($service)
     {
         return sprintf('%s%s',
@@ -377,10 +486,19 @@ class OcaApi
         );
     }
 
-    protected function callPost($service, $data = [])
+    /**
+     * @param $service
+     * @param array $data
+     * @return string
+     */
+    protected function callPost($service, $data = [], $epak = true)
     {
         $curlClient = $this->getCurlClient();
-        $url = $this->getServiceUrl($service);
+        if ($epak) {
+            $url = $this->getServiceEpakUrl($service);
+        } else {
+            $url = $this->getServiceUrl($service);
+        }
         $curlClient->post($url, $data);
         return $curlClient->getBody();
     }

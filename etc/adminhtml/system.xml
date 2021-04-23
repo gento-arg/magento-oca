@@ -66,9 +66,10 @@
                        showInStore="1">
                     <label>CUIT</label>
                 </field>
-                <!-- <field id="service_url" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="0" showInStore="0" >
-                    <label>Oep Tracking URL</label>
-                </field> -->
+                <field id="service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Oep WebService URL</label>
+                </field>
                 <field id="elocker_service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>Epak WebService URL</label>
