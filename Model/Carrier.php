@@ -310,17 +310,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     public function getContainerTypes(DataObject $params = null): array
     {
-        $operativas = $this->ocaApi->getOperatives();
-        $containers = [];
-
-        foreach ($operativas as $operativa) {
-            $idOperativa = $operativa['IdOperativa'];
-            $descripcion = $operativa['Descripcion'];
-            $descripcion = str_replace($idOperativa . ' - ', '', $descripcion);
-            $containers['gento_oca_' . $idOperativa] = sprintf('OCA - %s (%s)', $descripcion, $idOperativa);
-        }
-
-        return $containers;
+        return [
+            'gento_oca' => $this->getConfigData('title')
+        ];
     }
 
     protected function calculateVolume(Product $product)
@@ -408,7 +400,20 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
             $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
 
-            $this->ocaApi->requestShipment($request);
+            $admision = $this->ocaApi->requestShipment($request);
+
+            $data = $admision['data'];
+            if (!isset($data[0])) {
+                throw new LocalizedException(__('Webservice doesnt response any data'));
+            }
+            $ordenRetiro = $data[0]['OrdenRetiro'];
+            $numeroEnvio = $data[0]['NumeroEnvio'];
+            $labelContent = $this->ocaApi->getPDFEtiqueta($ordenRetiro, $numeroEnvio);
+
+            $result = new DataObject();
+            $result->setTrackingNumber($numeroEnvio);
+            $result->setShippingLabelContent(base64_decode($labelContent));
+            return $result;
         } catch (Exception $e) {
             throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
         }

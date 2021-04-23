@@ -3,15 +3,16 @@
 namespace Gento\Oca\Model;
 
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 use Exception;
 use Gento\Oca\Helper\ArrayToXML;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
-use Oca;
 use Zend_Date;
 
 class OcaApi
@@ -19,6 +20,7 @@ class OcaApi
     const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
     const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
     const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
+    const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
     const WS_MULTI_INGRESO_OR = 'IngresoORMultiplesRetiros';
     const WS_OPERATIVES_BY_USR = 'GetOperativasByUsuario';
     const WS_TARIFAR_ENVIO_CORPORATIVO = 'Tarifar_Envio_Corporativo';
@@ -83,8 +85,14 @@ class OcaApi
     {
         $data = $this->callPost(self::WS_CENTROS_IMPOSICION);
         $centros = $this->loadDataset($data, [
-            'idCentroImposicion', 'Sigla', 'Descripcion',
-            'Calle', 'Numero', 'Piso', 'Localidad', 'CodigoPostal',
+            'idCentroImposicion',
+            'Sigla',
+            'Descripcion',
+            'Calle',
+            'Numero',
+            'Piso',
+            'Localidad',
+            'CodigoPostal',
         ]);
 
         return $this->processBranches($centros);
@@ -103,10 +111,22 @@ class OcaApi
             'CodigoPostal' => $zipcode
         ]);
         $centros = $this->loadDataset($data, [
-            'idCentroImposicion', 'IdSucursalOCA', 'Sigla', 'Descripcion',
-            'Calle', 'Numero', 'Torre', 'Piso', 'Depto', 'Localidad',
-            'IdProvincia', 'idCodigoPostal', 'Telefono', 'eMail',
-            'Provincia', 'CodigoPostal',
+            'idCentroImposicion',
+            'IdSucursalOCA',
+            'Sigla',
+            'Descripcion',
+            'Calle',
+            'Numero',
+            'Torre',
+            'Piso',
+            'Depto',
+            'Localidad',
+            'IdProvincia',
+            'idCodigoPostal',
+            'Telefono',
+            'eMail',
+            'Provincia',
+            'CodigoPostal',
         ]);
 
         return $this->processBranches($centros);
@@ -151,8 +171,9 @@ class OcaApi
             'Total',
         ]);
 
-        if (count($dataSet) <= 0)
+        if (count($dataSet) <= 0) {
             return null;
+        }
 
         return (object)array_shift($dataSet);
     }
@@ -183,10 +204,9 @@ class OcaApi
      */
     public function requestShipment(DataObject $request)
     {
-        $client = new Oca($this->_cuit);
         $metodo = explode('_', $request->getShippingMethod());
         $operativa = $metodo[0];
-        $centroImposicion = null;
+        $centroImposicion = 0;
         if (isset($metodo[1])) {
             $centroImposicion = $metodo[1];
         }
@@ -198,8 +218,7 @@ class OcaApi
         $request->setCentroImposicion($centroImposicion);
         $xmlOr = $this->getXmlOR($request);
         $xmlOr = str_replace(PHP_EOL, '', $xmlOr);
-        file_put_contents('ingresoor.xml', $xmlOr);
-        $ingresoOR = $client->ingresoORMultiplesRetiros(
+        return $this->getIngresoORMultiple(
             $this->getUsername(),
             $this->getPassword(),
             $xmlOr
@@ -217,8 +236,12 @@ class OcaApi
         ]);
 
         return $this->loadDataset($data, [
-            'IdOperativa', 'Descripcion', 'ConVolumen',
-            'ConValorDeclarado', 'ASucursal', 'OrigenSucursal',
+            'IdOperativa',
+            'Descripcion',
+            'ConVolumen',
+            'ConValorDeclarado',
+            'ASucursal',
+            'OrigenSucursal',
         ]);
     }
 
@@ -235,9 +258,98 @@ class OcaApi
         ], false);
 
         return $this->loadDataset($data, [
-            'IdOperativa', 'Descripcion', 'ConVolumen',
-            'ConValorDeclarado', 'ASucursal', 'OrigenSucursal',
+            'NroCentroCosto',
+            'Solicitante',
+            'CalleRetiro',
+            'NumeroRetiro',
+            'PisoRetiro',
+            'DeptoRetiro',
+            'LocalidadRetiro',
+            'CodigoPostal',
+            'TelContactoRetiro',
+            'EmaiContactolRetiro',
+            'ContactoRetiro',
         ]);
+    }
+
+    public function getIngresoORMultiple($user, $password, $xml, $confirm = true)
+    {
+        $data = $this->callPost(self::WS_MULTI_INGRESO_OR, [
+            'usr' => $user,
+            'psw' => $password,
+            'xml_Datos' => $xml,
+            'ConfirmarRetiro' => $confirm ? 'true' : 'false',
+            'ArchivoCliente' => '',
+            'ArchivoProceso' => '',
+        ]);
+
+        $childs = $this->loadPaths($data, [
+            'resumen' => '//Resultado/Resumen',
+            'ingresos' => '//Resultado/DetalleIngresos',
+            'rechazos' => '//Resultado/DetalleRechazos',
+        ]);
+
+        if (isset($childs['rechazos'])) {
+            // TODO ¿Pueden ser rechazados algunos y admitidos otros?
+            $rechazo = $this->loadFields($childs['rechazos'][0], [
+                'Operativa',
+                'Remito',
+                'Motivo',
+                'Cantidad'
+            ]);
+
+            // TODO Con datos de ejemplo, por mas que venga rechazado por este motivo trae datos de rastreo.
+            // TODO Determinar si es correcto no arrojar error cuando operativa es 0
+            if ($rechazo['Operativa'] != 0) {
+                throw new LocalizedException(__('OCA refuse the request with reason "%1"', $rechazo['Motivo']));
+            }
+        }
+
+        $ingresos = [];
+        foreach ($childs['ingresos'] as $resumen) {
+            $ingresos[] = $this->loadFields($resumen, [
+                'Operativa',
+                'OrdenRetiro',
+                'NumeroEnvio',
+                'Remito',
+                'Estado',
+                'SucursalDestino' => 'sucursalDestino'
+            ]);
+        }
+
+        $resumeData = [];
+        foreach ($childs['resumen'] as $resumen) {
+            $resumeData[] = $this->loadFields($resumen, [
+                'CodigoOperacion',
+                'FechaIngreso',
+                'mailUsuario',
+                'origen',
+                'CantidadRegistros',
+                'CantidadIngresados',
+                'CantidadRechazados'
+            ]);
+        }
+        return [
+            'resume' => $resumeData,
+            'data' => $ingresos
+        ];
+    }
+
+    /**
+     * @param $ordenRetiro
+     * @param $nroEnvio
+     * @return string PDF on base64 encode
+     */
+    public function getPDFEtiqueta($ordenRetiro, $nroEnvio)
+    {
+        $data = $this->callPost(self::WS_ETIQUETA_PDF_ORDENRETIRO, [
+            'idOrdenRetiro' => $ordenRetiro,
+            'nroEnvio' => $nroEnvio,
+            'logisticaInversa' => 'false'
+        ], false);
+
+        $xpath = $this->getXPath($data);
+        return $xpath->query('/*')->item(0)->nodeValue;
     }
 
     /**
@@ -291,12 +403,12 @@ class OcaApi
     {
         // Determinar los siguientes casos:
         /**
-         * Sucursal a Sucursal
-         * Sucursal a Domicilio
-         * Domicilio a Domicilio
-         * Domicilio a Sucursal
+         * WIP
+         * ✅ Domicilio a Domicilio
+         * ❌ Sucursal a Sucursal
+         * ❌ Sucursal a Domicilio
+         * ❌ Domicilio a Sucursal
          */
-
 
         $fecha = new Zend_Date();
         $paquetes = [];
@@ -307,7 +419,7 @@ class OcaApi
                 '@largo' => $package['params']['length'],
                 '@peso' => $package['params']['weight'],
                 '@valor' => $package['params']['customs_value'],
-                '@cantidad' => array_reduce($package['items'], function ($ax, $dx) {
+                '@cant' => array_reduce($package['items'], function ($ax, $dx) {
                     return $ax + $dx['qty'];
                 }, 0),
             ];
@@ -335,8 +447,8 @@ class OcaApi
                     '@centrocosto' => $request->getCentroCosto(),
                     '@centrocosto' => '',
                     '@idfranjahoraria' => '3', // @TODO
-                    '@idcentroimposicionorigen' => 0,
-                    '@idcentroimposicionorigen' => '1',
+                    '@idcentroimposicionorigen' => '0',
+//                    '@idcentroimposicionorigen' => '1',
                     '@fecha' => $fecha->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
                     'envios' => [
                         'envio' => [
@@ -368,15 +480,6 @@ class OcaApi
             ]
         ];
 
-//        $xmlData['origenes']['origen']['@calle'] = 'Crespo';
-//        $xmlData['origenes']['origen']['@nro'] = 1014;
-//        $xmlData['origenes']['origen']['@provincia'] = 'SANTA FE';
-//        $xmlData['origenes']['origen']['@contacto'] = 'Jose Fernandez';
-//        $xmlData['origenes']['origen']['@email'] = 'info@noaflojes.com.ar';
-//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@calle'] = 'Alberdi';
-//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@nro'] = 525;
-//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@provincia'] = 'BUENOS AIRES';
-//        $xmlData['origenes']['origen']['envios']['envio']['destinatario']['@apellido'] = 'Canepa';
         return $this->arrayToXML->buildXML($xmlData, 'ROWS');
     }
 
@@ -412,13 +515,45 @@ class OcaApi
      */
     protected function loadDataset($xmlObject, $fields)
     {
-        $dom = new DOMDocument();
-        $dom->loadXML($xmlObject, ~LIBXML_DTDVALID);
-        $xpath = new DOMXpath($dom);
+        $table = $this->loadPaths($xmlObject, ['table' => '//NewDataSet/Table']);
+        if (!isset($table['table'])) {
+            return [];
+        }
 
         $data = [];
-        foreach ($xpath->query("//NewDataSet/Table") as $ci) {
-            $data[] = $this->loadFields($ci, $fields);
+        foreach ($table['table'] as $row) {
+            $data[] = $this->loadFields($row, $fields);
+        }
+        return $data;
+    }
+
+    /**
+     * @param $xmlObject
+     * @param $paths
+     * @param $fields
+     * @return DOMElement[]
+     */
+    protected function loadPaths($xmlObject, $paths)
+    {
+        $xpath = $this->getXPath($xmlObject);
+
+        if (!is_array($paths)) {
+            $paths = [$paths];
+        }
+
+        $map = [];
+        array_walk($paths, function ($value, $key) use (&$map) {
+            if (is_numeric($key)) {
+                $key = $value;
+            }
+            $map[$key] = $value;
+        });
+
+        $data = [];
+        foreach ($map as $alias => $path) {
+            foreach ($xpath->query($path) as $ci) {
+                $data[$alias][] = $ci;
+            }
         }
         return $data;
     }
@@ -499,7 +634,29 @@ class OcaApi
         } else {
             $url = $this->getServiceUrl($service);
         }
+
         $curlClient->post($url, $data);
+
+        $this->handleError($curlClient);
+
         return $curlClient->getBody();
+    }
+
+    protected function handleError(Curl $curl)
+    {
+        $xpath = $this->getXPath($curl->getBody());
+
+        $errors = $xpath->query("//Errores/Error/Descripcion");
+        if ($errors->count() == 0) {
+            return;
+        }
+        throw new \Exception($errors->item(0)->nodeValue);
+    }
+
+    protected function getXPath($xmlString)
+    {
+        $dom = new DOMDocument();
+        $dom->loadXML($xmlString, ~LIBXML_DTDVALID);
+        return new DOMXpath($dom);
     }
 }
