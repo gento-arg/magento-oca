@@ -1,4 +1,4 @@
-# Magento 2 shipping method for OCA 
+# Magento 2 shipping method for OCA
 
 This module allow to use [OCA E-Pak](https://www.oca.com.ar/ecommerce_epak_epak/) shipping on Magento 2
 
@@ -22,8 +22,7 @@ bin/magento cache:clean
 
 ### Setting CUIT number
 
-OCA use `CUIT` to identify his customers and validate contracts. To config `CUIT`, just go to `Stores -> Configuration` and select `Sales -> Tax`, in that form you will see a field `CUIT` under the group `Default Tax Destination Calculation`.
-
+OCA use `CUIT` to identify his customers and validate contracts.
 
 ### Create operatories
 
@@ -35,12 +34,14 @@ On the menu `GENTo -> Operatories`, add all the operatories that you want to wor
 * **Code**: The OCA contract number
 * **Active**: Enable or disable the operatory
 * **Uses id centro imposicion**: This indicate that the operatory will use branches.
-* **Pays on destination branch**: If its true, the amount of shipping will not charge to customer order, but will be informed.
+* **Pays on destination branch**: If its true, the amount of shipping will not charge to customer order, but will be
+  informed.
 
 ### Branches
 
-The branches will be create automatically, but you can control which one not to use by change the `active` attribute to `no`, or maybe changing some data. 
-*Warning: If you change the code it may not work properly.* 
+The branches will be create automatically, but you can control which one not to use by change the `active` attribute
+to `no`, or maybe changing some data.
+*Warning: If you change the code it may not work properly.*
 
 ## Uninstall
 
@@ -48,7 +49,7 @@ The branches will be create automatically, but you can control which one not to 
 bin/magento module:uninstall Gento_Oca
 ```
 
-If you used Composer for installation Magento will remove the files and database information. 
+If you used Composer for installation Magento will remove the files and database information.
 
 ## Contributing
 

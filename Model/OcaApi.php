@@ -2,100 +2,108 @@
 
 namespace Gento\Oca\Model;
 
+use DOMDocument;
+use DOMXPath;
 use Gento\Oca\Helper\ArrayToXML;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\HTTP\Client\CurlFactory;
 use Oca;
 use Zend_Date;
 
 class OcaApi
 {
+    const XML_PATH_SERVICE_URL = 'carriers/gento_oca/elocker_service_url';
+    const XML_PATH_CUIT = 'carriers/gento_oca/cuit';
+    const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
+    const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
+    const WS_TARIFAR_ENVIO_CORPORATIVO = 'Tarifar_Envio_Corporativo';
+    const WS_TRACKING_PIEZA = 'Tracking_Pieza';
     /**
      * @var ScopeConfigInterface
      */
     protected $scopeConfig;
-
     /**
      * @var ArrayToXML
      */
     protected $arrayToXML;
-
     /**
      * @var EncryptorInterface
      */
     protected $encryptor;
-
+    /**
+     * @var CurlFactory
+     */
+    protected $curlFactory;
+    /**
+     * @var string
+     */
     protected $_cuit;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ArrayToXML $arrayToXML,
-        EncryptorInterface $encryptor
+        EncryptorInterface $encryptor,
+        CurlFactory $curlFactory
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->arrayToXML = $arrayToXML;
         $this->encryptor = $encryptor;
+        $this->curlFactory = $curlFactory;
 
-        $this->_cuit = $this->getFixedCuit($scopeConfig->getValue('tax/defaults/cuit'));
-    }
-
-    protected function getFixedCuit($cuit)
-    {
-        if (!$cuit || strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
-            return false;
+        $this->_cuit = $this->getFixedCuit($scopeConfig->getValue(self::XML_PATH_CUIT));
+        $this->_serviceUrl = trim($scopeConfig->getValue(self::XML_PATH_SERVICE_URL));
+        if ($this->_serviceUrl !== '' && !preg_match('~/$~', $this->_serviceUrl)) {
+            $this->_serviceUrl .= '/';
         }
-
-        return substr($cuit, 0, 2) . '-' . substr($cuit, 2, 8) . '-' . substr($cuit, 10);
     }
 
     /**
      * @return array[]
      */
-    public function getBranches($operatoryCode)
+    public function getBranches()
     {
-        $client = new Oca($this->_cuit, $operatoryCode);
-        $centros = $client->getCentrosImposicion();
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION);
+        $centros = $this->loadDataset($data, [
+            'idCentroImposicion', 'Sigla', 'Descripcion',
+            'Calle', 'Numero', 'Piso', 'Localidad', 'CodigoPostal',
+        ]);
 
         return $this->processBranches($centros);
-    }
-
-    protected function processBranches($centros)
-    {
-        array_walk($centros, function ($item, $key) use (&$centros) {
-            foreach ($item as $k => $v) {
-                $item[$k] = trim($v);
-            }
-            $centros[$key] = $item;
-        });
-
-        return array_map(function ($row) {
-            return [
-                'code' => $row['idCentroImposicion'],
-                'short_name' => $row['Sigla'],
-                'name' => $row['Descripcion'],
-                'description' => $row['Descripcion'],
-                'address_street' => $row['Calle'],
-                'address_number' => $row['Numero'],
-                'address_floor' => $row['Piso'],
-                'city' => $row['Localidad'],
-                'zipcode' => $row['CodigoPostal'],
-                'active' => true,
-            ];
-        }, $centros);
     }
 
     /**
      * @return array[]
      */
-    public function getBranchesZipCode($operatoryCode, $zipcode)
+    public function getBranchesZipCode($zipcode)
     {
-        $client = new Oca($this->_cuit, $operatoryCode);
-        $centros = $client->getCentrosImposicionPorCP($zipcode);
+        if (!$zipcode) {
+            return [];
+        }
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_CP, [
+            'CodigoPostal' => $zipcode
+        ]);
+        $centros = $this->loadDataset($data, [
+            'idCentroImposicion', 'IdSucursalOCA', 'Sigla', 'Descripcion',
+            'Calle', 'Numero', 'Torre', 'Piso', 'Depto', 'Localidad',
+            'IdProvincia', 'idCodigoPostal', 'Telefono', 'eMail',
+            'Provincia', 'CodigoPostal',
+        ]);
 
         return $this->processBranches($centros);
     }
 
+    /**
+     * @param $operatoryCode
+     * @param $weight
+     * @param $volume
+     * @param $senderZipcode
+     * @param $receiverZipcode
+     * @param $packageQty
+     * @param $packageValue
+     * @return object
+     */
     public function getQuote(
         $operatoryCode,
         $weight,
@@ -105,22 +113,47 @@ class OcaApi
         $packageQty,
         $packageValue
     ) {
-        $client = new Oca($this->_cuit, $operatoryCode);
-        return $client->tarifarEnvioCorporativo(
-            floatval($weight),
-            $volume,
-            $senderZipcode,
-            $receiverZipcode,
-            $packageQty,
-            $packageValue
-        );
+        $data = $this->callPost(self::WS_TARIFAR_ENVIO_CORPORATIVO, [
+            'PesoTotal' => floatval($weight),
+            'VolumenTotal' => $volume,
+            'CodigoPostalOrigen' => $senderZipcode,
+            'CodigoPostalDestino' => $receiverZipcode,
+            'CantidadPaquetes' => $packageQty,
+            'ValorDeclarado' => $packageValue,
+            'Cuit' => $this->_cuit,
+            'Operativa' => $operatoryCode,
+        ]);
+
+        $dataSet = $this->loadDataset($data, [
+            'Tarifador',
+            'Precio',
+            'Ambito',
+            'PlazoEntrega',
+            'Adicional',
+            'Total',
+        ]);
+
+        if (count($dataSet) <= 0)
+            return null;
+
+        return (object)array_shift($dataSet);
     }
 
     public function getTracking($trackingCode)
     {
-        $client = new Oca($this->_cuit);
-        $tracking = $client->trackingPieza($trackingCode);
-        return $tracking;
+        $data = $this->callPost(self::WS_TRACKING_PIEZA, [
+            'Pieza' => $trackingCode,
+            'NroDocumentoCliente' => '',
+            'CUIT' => $this->_cuit,
+        ]);
+
+        return $this->loadDataset($data, [
+            'NumeroEnvio',
+            'Motivo' => 'Descripcion_Motivo',
+            'Estado' => 'Desdcripcion_Estado',
+            'Sucursal' => 'SUC',
+            'Fecha' => 'fecha',
+        ]);
     }
 
     public function requestShipment(DataObject $request)
@@ -146,6 +179,50 @@ class OcaApi
             $this->getPassword(),
             $xmlOr
         );
+    }
+
+    public function getOperativas()
+    {
+        $client = new Oca($this->_cuit);
+        return $client->getOperativas(
+            $this->getUsername(),
+            $this->getPassword()
+        );
+    }
+
+
+    protected function getFixedCuit($cuit)
+    {
+        if (!$cuit || strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
+            return false;
+        }
+
+        return substr($cuit, 0, 2) . '-' . substr($cuit, 2, 8) . '-' . substr($cuit, 10);
+    }
+
+    protected function processBranches($centros)
+    {
+        array_walk($centros, function ($item, $key) use (&$centros) {
+            foreach ($item as $k => $v) {
+                $item[$k] = trim($v);
+            }
+            $centros[$key] = $item;
+        });
+
+        return array_map(function ($row) {
+            return [
+                'code' => $row['idCentroImposicion'],
+                'short_name' => $row['Sigla'],
+                'name' => $row['Descripcion'],
+                'description' => $row['Descripcion'],
+                'address_street' => $row['Calle'],
+                'address_number' => $row['Numero'],
+                'address_floor' => $row['Piso'],
+                'city' => $row['Localidad'],
+                'zipcode' => $row['CodigoPostal'],
+                'active' => true,
+            ];
+        }, $centros);
     }
 
     protected function getXmlOR(DataObject $request)
@@ -248,12 +325,63 @@ class OcaApi
         return $this->encryptor->decrypt($password);
     }
 
-    public function getOperativas()
+    protected function loadDataset($xmlObject, $fields)
     {
-        $client = new Oca($this->_cuit);
-        return $client->getOperativas(
-            $this->getUsername(),
-            $this->getPassword()
+        $dom = new DOMDocument();
+        $dom->loadXML($xmlObject, ~LIBXML_DTDVALID);
+        $xpath = new DOMXpath($dom);
+
+        $data = [];
+        foreach ($xpath->query("//NewDataSet/Table") as $ci) {
+            $data[] = $this->loadFields($ci, $fields);
+        }
+        return $data;
+    }
+
+    protected function loadFields($ci, $fields)
+    {
+        $return = [];
+        $map = [];
+
+        array_walk($fields, function ($value, $key) use (&$map) {
+            if (is_numeric($key)) {
+                $key = $value;
+            }
+            $map[$key] = $value;
+        });
+
+        foreach ($map as $alias => $field) {
+            $value = null;
+
+            $item = $ci->getElementsByTagName($field)->item(0);
+            if ($item != null) {
+                $value = $item->nodeValue;
+            }
+
+            $return[$alias] = $value;
+        }
+
+        return $return;
+    }
+
+    protected function getCurlClient()
+    {
+        return $this->curlFactory->create();
+    }
+
+    protected function getServiceUrl($service)
+    {
+        return sprintf('%s%s',
+            $this->_serviceUrl,
+            $service
         );
+    }
+
+    protected function callPost($service, $data = [])
+    {
+        $curlClient = $this->getCurlClient();
+        $url = $this->getServiceUrl($service);
+        $curlClient->post($url, $data);
+        return $curlClient->getBody();
     }
 }

@@ -5,7 +5,6 @@ namespace Gento\Oca\Model;
 use DateTime;
 use Exception;
 use Gento\Oca\Helper\Data;
-use Gento\Oca\Model\Config\Source\UnitsAttribute;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
@@ -219,16 +218,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $rateResult;
     }
 
-    protected function calculateVolume(Product $product)
-    {
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
-
-        list($width, $height, $length) = $this->helper->getProductSize($product);
-
-        return $width * $height * $length;
-    }
-
     public function processOperatory(
         $operatory,
         Result $rateResult,
@@ -257,7 +246,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
         $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
         if ($operatory->getUsesIdci()) {
-            $branches = $this->ocaApi->getBranchesZipCode($operatory->getCode(), $receiverZipcode);
+            $branches = $this->ocaApi->getBranchesZipCode($receiverZipcode);
 
             $this->eventManager->dispatch('gento_oca_get_branch_data', [
                 'branchs_data' => $branches,
@@ -300,6 +289,48 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         }
 
         return $rateResult;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isTrackingAvailable()
+    {
+        return true;
+    }
+
+    public function isShippingLabelsAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @param DataObject|null $params
+     * @return array
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        $operativas = $this->ocaApi->getOperativas();
+        $containers = [];
+
+        foreach ($operativas as $operativa) {
+            $idOperativa = $operativa['IdOperativa'];
+            $descripcion = $operativa['Descripcion'];
+            $descripcion = str_replace($idOperativa . ' - ', '', $descripcion);
+            $containers['gento_oca_' . $idOperativa] = sprintf('OCA - %s (%s)', $descripcion, $idOperativa);
+        }
+
+        return $containers;
+    }
+
+    protected function calculateVolume(Product $product)
+    {
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        list($width, $height, $length) = $this->helper->getProductSize($product);
+
+        return $width * $height * $length;
     }
 
     protected function _addRate(
@@ -364,38 +395,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             ScopeInterface::SCOPE_STORE,
             $this->getStore()
         );
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isTrackingAvailable()
-    {
-        return true;
-    }
-
-    public function isShippingLabelsAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @param DataObject|null $params
-     * @return array
-     */
-    public function getContainerTypes(DataObject $params = null): array
-    {
-        $operativas = $this->ocaApi->getOperativas();
-        $containers = [];
-
-        foreach ($operativas as $operativa) {
-            $idOperativa = $operativa['IdOperativa'];
-            $descripcion = $operativa['Descripcion'];
-            $descripcion = str_replace($idOperativa . ' - ', '', $descripcion);
-            $containers['gento_oca_' . $idOperativa] = sprintf('OCA - %s (%s)', $descripcion, $idOperativa);
-        }
-
-        return $containers;
     }
 
     /**
