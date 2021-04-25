@@ -18,7 +18,6 @@ use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
-use Magento\Framework\Registry;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
 use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory as RateResultErrorFactory;
@@ -38,6 +37,7 @@ use Psr\Log\LoggerInterface;
 
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
+    const XML_PATH_FRANJAHORARIA = 'carriers/gento_oca/reception_time';
     /**
      * @var string
      */
@@ -91,7 +91,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         RateFactory $rateResultFactory,
         MethodFactory $rateMethodFactory,
         CollectionFactory $operatoryCollectionFactory,
-        Registry $coreRegistry,
         OcaApi $ocaApi,
         BranchRepositoryFactory $branchRepositoryFactory,
         ManagerInterface $eventManager,
@@ -113,7 +112,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $this->_rateResultFactory = $rateResultFactory;
         $this->_rateMethodFactory = $rateMethodFactory;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
-        $this->_coreRegistry = $coreRegistry;
         $this->ocaApi = $ocaApi;
         $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
@@ -396,9 +394,32 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     protected function _doShipmentRequest(DataObject $request)
     {
+        $result = new DataObject();
         try {
-            $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
-            $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
+            /**
+             * WIP
+             * ✅ Domicilio a Domicilio
+             * ✅ Domicilio a Sucursal
+             *
+             * ❌ Sucursal a Sucursal
+             * ❌ Sucursal a Domicilio
+             */
+
+//            $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
+//            $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
+            $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
+
+            $metodo = explode('_', $request->getShippingMethod());
+            $operativa = $metodo[0];
+            $centroImposicion = '0';
+            if (isset($metodo[1])) {
+                $centroImposicion = $metodo[1];
+            }
+            $request->setOperativa($operativa);
+            $request->setCentroImposicion($centroImposicion);
+
+            // TODO Must be complete with BranchToBranch an BranchToAddrees1
+            $request->setCentroImposicionOrigen('0');
 
             $admision = $this->ocaApi->requestShipment($request);
 
@@ -410,21 +431,12 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $numeroEnvio = $data[0]['NumeroEnvio'];
             $labelContent = $this->ocaApi->getPDFEtiqueta($ordenRetiro, $numeroEnvio);
 
-            $result = new DataObject();
             $result->setTrackingNumber($numeroEnvio);
             $result->setShippingLabelContent(base64_decode($labelContent));
-            return $result;
         } catch (Exception $e) {
             throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
         }
-
-        /**
-         * return: DataObject
-         *  tracking_number
-         *  shipping_label_content
-         */
-        throw new Exception();
-        return $request;
+        return $result;
     }
 
     protected function getTracking($trackings)

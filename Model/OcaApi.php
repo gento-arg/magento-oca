@@ -109,7 +109,7 @@ class OcaApi
         }
         $data = $this->callPost(self::WS_CENTROS_IMPOSICION_CP, [
             'CodigoPostal' => $zipcode
-        ]);
+        ], false);
         $centros = $this->loadDataset($data, [
             'idCentroImposicion',
             'IdSucursalOCA',
@@ -204,18 +204,13 @@ class OcaApi
      */
     public function requestShipment(DataObject $request)
     {
-        $metodo = explode('_', $request->getShippingMethod());
-        $operativa = $metodo[0];
-        $centroImposicion = 0;
-        if (isset($metodo[1])) {
-            $centroImposicion = $metodo[1];
-        }
-
+        $operativa = $request->getOperativa();
         $centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
         $centroCosto = $centros[0]['NroCentroCosto'];
-        $request->setOperativa($operativa);
+
         $request->setCentroCosto($centroCosto);
-        $request->setCentroImposicion($centroImposicion);
+        $request->setCentroCosto('');
+
         $xmlOr = $this->getXmlOR($request);
         $xmlOr = str_replace(PHP_EOL, '', $xmlOr);
         return $this->getIngresoORMultiple(
@@ -401,30 +396,24 @@ class OcaApi
      */
     protected function getXmlOR(DataObject $request)
     {
-        // Determinar los siguientes casos:
-        /**
-         * WIP
-         * ✅ Domicilio a Domicilio
-         * ❌ Sucursal a Sucursal
-         * ❌ Sucursal a Domicilio
-         * ❌ Domicilio a Sucursal
-         */
-
-        $fecha = new Zend_Date();
-        $paquetes = [];
+        $date = new Zend_Date();
+        $packages = [];
         foreach ($request->getPackages() as $package) {
-            $paquetes[] = [
+            $packages[] = [
                 '@alto' => $package['params']['height'],
                 '@ancho' => $package['params']['width'],
                 '@largo' => $package['params']['length'],
                 '@peso' => $package['params']['weight'],
                 '@valor' => $package['params']['customs_value'],
-                '@cant' => array_reduce($package['items'], function ($ax, $dx) {
-                    return $ax + $dx['qty'];
-                }, 0),
+                '@cant' => 1,
+                // If the next line is uncomemnted, OCA will return one label for each products instead of one label
+                // for each package
+                // '@cant' => array_reduce($package['items'], function ($ax, $dx) {
+                //     return $ax + $dx['qty'];
+                // }, 0),
             ];
         }
-        $paquetes = ['paquete' => $paquetes];
+        $packages = ['paquete' => $packages];
 
         $xmlData = [
             'cabecera' => [
@@ -434,9 +423,9 @@ class OcaApi
             'origenes' => [
                 'origen' => [
                     '@calle' => $request->getShipperAddressStreet1(),
-                    '@nro' => $request->getShipperAddressStreet2(),
-                    '@piso' => '', // @TODO
-                    '@depto' => '', // @TODO
+                    '@nro' => '',
+                    '@piso' => '',
+                    '@depto' => '',
                     '@cp' => $request->getShipperAddressPostalCode(),
                     '@localidad' => $request->getShipperAddressCity(),
                     '@provincia' => $request->getShipperAddressProvince(),
@@ -445,11 +434,10 @@ class OcaApi
                     '@solicitante' => '',
                     '@observaciones' => '',
                     '@centrocosto' => $request->getCentroCosto(),
-                    '@centrocosto' => '',
-                    '@idfranjahoraria' => '3', // @TODO
-                    '@idcentroimposicionorigen' => '0',
-//                    '@idcentroimposicionorigen' => '1',
-                    '@fecha' => $fecha->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
+                    '@idfranjahoraria' => $request->getFranjaHoraria(),
+                    '@idfranjahoraria' => '3',
+                    '@idcentroimposicionorigen' => $request->getCentroImposicionOrigen(),
+                    '@fecha' => $date->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
                     'envios' => [
                         'envio' => [
                             '@idoperativa' => $request->getOperativa(),
@@ -460,20 +448,20 @@ class OcaApi
                             'destinatario' => [
                                 '@apellido' => $request->getRecipientContactPersonLastName(),
                                 '@nombre' => $request->getRecipientContactPersonFirstName(),
-                                '@calle' => $request->getRecipientAddressStreet1(),
-                                '@nro' => $request->getRecipientAddressStreet2(),
-                                '@piso' => '', // @TODO
-                                '@depto' => '', // @TODO
+                                '@calle' => $request->getRecipientAddressStreet(),
+                                '@nro' => '',
+                                '@piso' => '',
+                                '@depto' => '',
                                 '@localidad' => $request->getRecipientAddressCity(),
                                 '@provincia' => $request->getRecipientAddressProvince(),
                                 '@cp' => $request->getRecipientAddressPostalCode(),
                                 '@telefono' => $request->getRecipientContactPhoneNumber(),
                                 '@email' => $request->getRecipientEmail(),
                                 '@idci' => $request->getCentroImposicion(),
-                                '@celular' => '', // @TODO
+                                '@celular' => '',
                                 '@observaciones' => '',
                             ],
-                            'paquetes' => $paquetes
+                            'paquetes' => $packages
                         ]
                     ]
                 ]

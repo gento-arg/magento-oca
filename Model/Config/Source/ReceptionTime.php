@@ -2,7 +2,9 @@
 
 namespace Gento\Oca\Model\Config\Source;
 
-class ReceptionTime implements \Magento\Framework\Option\ArrayInterface
+use Magento\Framework\Data\OptionSourceInterface;
+
+class ReceptionTime implements OptionSourceInterface
 {
     /**
      * Options getter
