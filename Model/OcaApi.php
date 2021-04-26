@@ -212,7 +212,6 @@ class OcaApi
         $request->setCentroCosto('');
 
         $xmlOr = $this->getXmlOR($request);
-        $xmlOr = str_replace(PHP_EOL, '', $xmlOr);
         return $this->getIngresoORMultiple(
             $this->getUsername(),
             $this->getPassword(),

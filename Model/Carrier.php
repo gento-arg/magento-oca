@@ -405,8 +405,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
              * ❌ Sucursal a Domicilio
              */
 
-//            $request->setShipperAddressProvince($request->getData('shipper_address_state_or_province_code'));
-//            $request->setRecipientAddressProvince($request->getData('recipient_address_state_or_province_code'));
+            $shipperProvinceCode = $request->getData('shipper_address_state_or_province_code');
+            $shipperCountryCode = $request->getData('shipper_address_country_code');
+            $shipperProvince = $this->_regionFactory->create()
+                ->loadByCode($shipperProvinceCode, $shipperCountryCode);
+            $request->setShipperAddressProvince($shipperProvince->getName() ?
+                $shipperProvince->getName() : $shipperProvinceCode);
+
+            $recipientProvinceCode = $request->getData('recipient_address_state_or_province_code');
+            $recipientCountryCode = $request->getData('recipient_address_country_code');
+            $recipientProvince = $this->_regionFactory->create()
+                ->loadByCode($recipientProvinceCode, $recipientCountryCode);
+            $request->setRecipientAddressProvince($recipientProvince->getName() ?
+                $recipientProvince->getName() : $recipientProvinceCode);
             $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
 
             $metodo = explode('_', $request->getShippingMethod());
@@ -418,7 +429,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $request->setOperativa($operativa);
             $request->setCentroImposicion($centroImposicion);
 
-            // TODO Must be complete with BranchToBranch an BranchToAddrees1
+            // TODO Must be complete with BranchToBranch an BranchToDoor
             $request->setCentroImposicionOrigen('0');
 
             $admision = $this->ocaApi->requestShipment($request);
