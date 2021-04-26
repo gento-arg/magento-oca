@@ -3,7 +3,7 @@
     "description": "Modulo de Magento 2 para la integracion con OCA",
     "type": "magento2-module",
     "require": {
-        "php": ">=7.2",
+        "php": "^7.2.0",
         "gento-arg/module-core": "*",
         "gento-arg/oca-php-api": "^1.0",
         "magento/framework": "*.*",
