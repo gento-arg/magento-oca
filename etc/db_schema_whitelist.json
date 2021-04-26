@@ -1,0 +1,44 @@
+{
+    "oca_operatories": {
+        "column": {
+            "operatory_id": true,
+            "name": true,
+            "code": true,
+            "active": true,
+            "uses_idci": true,
+            "pays_on_destination": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "OCA_OPERATORIES_NAME_CODE": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "oca_branches": {
+        "column": {
+            "branch_id": true,
+            "code": true,
+            "short_name": true,
+            "name": true,
+            "description": true,
+            "address_street": true,
+            "address_number": true,
+            "address_floor": true,
+            "city": true,
+            "zipcode": true,
+            "active": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "FTI_BA2A91F8B094182B07044E0E161C86EE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OCA_BRANCHES_CODE": true
+        }
+    }
+}

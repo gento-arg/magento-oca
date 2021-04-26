@@ -2,13 +2,13 @@
 
 namespace Gento\Oca\Model;
 
-use Gento\Oca\Model\BranchRepositoryFactory;
-use Gento\Oca\Model\Config\Source\UnitsAttribute;
-use Gento\Oca\Model\OcaApi;
+use DateTime;
+use Exception;
+use Gento\Oca\Helper\Data;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Directory\Model\CurrencyFactory;
@@ -16,23 +16,28 @@ use Magento\Directory\Model\RegionFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
 use Magento\Quote\Model\Quote\Address\RateResult\ErrorFactory as RateResultErrorFactory;
+use Magento\Quote\Model\Quote\Address\RateResult\Method;
 use Magento\Quote\Model\Quote\Address\RateResult\MethodFactory;
 use Magento\Shipping\Model\Carrier\AbstractCarrierOnline;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
 use Magento\Shipping\Model\Rate\Result;
 use Magento\Shipping\Model\Rate\ResultFactory as RateFactory;
 use Magento\Shipping\Model\Simplexml\ElementFactory;
-use Magento\Shipping\Model\Tracking\ResultFactory;
 use Magento\Shipping\Model\Tracking\Result\ErrorFactory as ResultErrorFactory;
+use Magento\Shipping\Model\Tracking\Result\Status;
 use Magento\Shipping\Model\Tracking\Result\StatusFactory;
+use Magento\Shipping\Model\Tracking\ResultFactory;
+use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
 
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
+    const XML_PATH_FRANJAHORARIA = 'carriers/gento_oca/reception_time';
     /**
      * @var string
      */
@@ -73,6 +78,11 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     private $eventManager;
 
+    /**
+     * @var Data
+     */
+    private $helper;
+
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ScopeConfigInterface $scopeConfig,
@@ -95,6 +105,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         DirectoryData $directoryData,
         StockRegistryInterface $stockRegistry,
         PricingHelperData $pricingHelper,
+        Data $helper,
         array $data = []
     ) {
         $this->productRepository = $productRepository;
@@ -105,6 +116,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
         $this->pricingHelper = $pricingHelper;
+        $this->helper = $helper;
         parent::__construct(
             $scopeConfig,
             $rateErrorFactory,
@@ -230,9 +242,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
         $quoteValue = $tarifa->Total;
 
-        $plazoEntrega = $tarifa->PlazoEntrega + (int) $this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
         if ($operatory->getUsesIdci()) {
-            $branches = $this->ocaApi->getBranchesZipCode($operatory->getCode(), $receiverZipcode);
+            $branches = $this->ocaApi->getBranchesZipCode($receiverZipcode);
 
             $this->eventManager->dispatch('gento_oca_get_branch_data', [
                 'branchs_data' => $branches,
@@ -240,12 +252,12 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             ]);
 
             /**
-             * @var \Gento\Oca\Model\BranchRepository $branchRepository
+             * @var BranchRepository $branchRepository
              */
             $branchRepository = $this->branchRepositoryFactory->create();
             foreach ($branches as $branchData) {
                 /**
-                 * @var \Gento\Oca\Model\Branch $branch
+                 * @var Branch $branch
                  */
                 $branch = $branchRepository->getByCode($branchData['code']);
                 if (!$branch->getActive()) {
@@ -277,6 +289,40 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $rateResult;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function isTrackingAvailable()
+    {
+        return true;
+    }
+
+    public function isShippingLabelsAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @param DataObject|null $params
+     * @return array
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        return [
+            'gento_oca' => $this->getConfigData('title')
+        ];
+    }
+
+    protected function calculateVolume(Product $product)
+    {
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        list($width, $height, $length) = $this->helper->getProductSize($product);
+
+        return $width * $height * $length;
+    }
+
     protected function _addRate(
         $rateResult,
         $operatory,
@@ -291,7 +337,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $total = 1.21 * floatval($total);
         }
 
-        /** @var \Magento\Quote\Model\Quote\Address\RateResult\Method $method */
+        /** @var Method $method */
         $method = $this->_rateMethodFactory->create();
         $method->setCarrier($this->_code);
         $method->setCarrierTitle($this->getConfigData('title'));
@@ -332,26 +378,76 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $rateResult->append($method);
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function isTrackingAvailable()
-    {
-        return true;
-    }
-
     protected function getStoreConfig($path)
     {
         return $this->_scopeConfig->getValue(
             $path,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $this->getStore()
         );
     }
 
+    /**
+     * @param DataObject $request
+     * @return mixed
+     * @throws LocalizedException
+     */
     protected function _doShipmentRequest(DataObject $request)
     {
-        return $request;
+        $result = new DataObject();
+        try {
+            /**
+             * WIP
+             * ✅ Domicilio a Domicilio
+             * ✅ Domicilio a Sucursal
+             *
+             * ❌ Sucursal a Sucursal
+             * ❌ Sucursal a Domicilio
+             */
+
+            $shipperProvinceCode = $request->getData('shipper_address_state_or_province_code');
+            $shipperCountryCode = $request->getData('shipper_address_country_code');
+            $shipperProvince = $this->_regionFactory->create()
+                ->loadByCode($shipperProvinceCode, $shipperCountryCode);
+            $request->setShipperAddressProvince($shipperProvince->getName() ?
+                $shipperProvince->getName() : $shipperProvinceCode);
+
+            $recipientProvinceCode = $request->getData('recipient_address_state_or_province_code');
+            $recipientCountryCode = $request->getData('recipient_address_country_code');
+            $recipientProvince = $this->_regionFactory->create()
+                ->loadByCode($recipientProvinceCode, $recipientCountryCode);
+            $request->setRecipientAddressProvince($recipientProvince->getName() ?
+                $recipientProvince->getName() : $recipientProvinceCode);
+            $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
+
+            $metodo = explode('_', $request->getShippingMethod());
+            $operativa = $metodo[0];
+            $centroImposicion = '0';
+            if (isset($metodo[1])) {
+                $centroImposicion = $metodo[1];
+            }
+            $request->setOperativa($operativa);
+            $request->setCentroImposicion($centroImposicion);
+
+            // TODO Must be complete with BranchToBranch an BranchToDoor
+            $request->setCentroImposicionOrigen('0');
+
+            $admision = $this->ocaApi->requestShipment($request);
+
+            $data = $admision['data'];
+            if (!isset($data[0])) {
+                throw new LocalizedException(__('Webservice doesnt response any data'));
+            }
+            $ordenRetiro = $data[0]['OrdenRetiro'];
+            $numeroEnvio = $data[0]['NumeroEnvio'];
+            $labelContent = $this->ocaApi->getPDFEtiqueta($ordenRetiro, $numeroEnvio);
+
+            $result->setTrackingNumber($numeroEnvio);
+            $result->setShippingLabelContent(base64_decode($labelContent));
+        } catch (Exception $e) {
+            throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
+        }
+        return $result;
     }
 
     protected function getTracking($trackings)
@@ -367,7 +463,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $title = $this->getConfigData('title');
             $url = 'https://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
             $trackingResults = $this->ocaApi->getTracking($tracking);
-            /** @var \Magento\Shipping\Model\Tracking\Result\Status $status */
+            /** @var Status $status */
             $status = $this->_trackStatusFactory->create();
             $status->setCarrier($code);
             $status->setCarrierTitle($title);
@@ -375,7 +471,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $status->setUrl($url . $tracking);
             $progress = [];
             foreach ($trackingResults as $trackingResult) {
-                $fecha = new \DateTime($trackingResult['Fecha']);
+                $fecha = new DateTime($trackingResult['Fecha']);
 
                 $progress[] = [
                     'deliverylocation' => $trackingResult['Sucursal'],
@@ -389,43 +485,5 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result->append($status);
         }
         return $result;
-    }
-
-    protected function calculateVolume(Product $product)
-    {
-        $attrs = ['width', 'height', 'length'];
-
-        foreach ($attrs as $att) {
-            ${$att . 'Att'} = $this->getConfigData("volume/" . $att);
-        }
-
-        if (!$widthAtt || !$heightAtt || !$lengthAtt) {
-            return 0;
-        }
-
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
-
-        $unitValue = $this->getConfigData("volume/unit");
-        $factor = 1;
-        if ($unitValue == UnitsAttribute::UNIT_CENTIMETER) {
-            $factor = 100;
-        } elseif ($unitValue == UnitsAttribute::UNIT_MILLIMETER) {
-            $factor = 1000;
-        }
-        foreach ($attrs as $att) {
-            ${$att} = (float) $product->getData(${$att . 'Att'});
-            if (${$att} <= 0) {
-                return 0;
-            }
-            ${$att} /= $factor;
-        }
-
-        $volume = $width * $height * $length;
-        if ($volume == 0) {
-            return $volume;
-        }
-
-        return $volume;
     }
 }

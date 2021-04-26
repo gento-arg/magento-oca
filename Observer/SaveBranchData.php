@@ -51,7 +51,6 @@ class SaveBranchData implements ObserverInterface
     public function execute(EventObserver $observer)
     {
         $branchsData = $observer->getBranchsData();
-        // $operatory = $observer->getOperatory();
 
         foreach ($branchsData as $branchData) {
             try {

@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <preference for="Gento\Oca\Api\OperatoryRepositoryInterface" type="Gento\Oca\Model\OperatoryRepository"/>
     <preference for="Gento\Oca\Api\Data\OperatoryInterface" type="Gento\Oca\Model\Operatory"/>
     <preference for="Gento\Oca\Api\Data\OperatorySearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
@@ -23,7 +24,8 @@
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
-                <item name="gento_oca_operatory_listing_data_source" xsi:type="string">GentoOcaOperatoryGridCollection</item>
+                <item name="gento_oca_operatory_listing_data_source" xsi:type="string">GentoOcaOperatoryGridCollection
+                </item>
                 <item name="gento_oca_branch_listing_data_source" xsi:type="string">GentoOcaBranchGridCollection</item>
             </argument>
         </arguments>
@@ -39,7 +41,8 @@
     </type>
     <virtualType name="GentoOcaOperatoryGridCollection" type="Gento\Oca\Model\ResourceModel\Operatory\Collection">
         <arguments>
-            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
+            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document
+            </argument>
             <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Operatory</argument>
             <argument name="idFieldName" xsi:type="string">operatory_id</argument>
             <argument name="eventPrefix" xsi:type="string">gento_oca_operatory_collection</argument>
@@ -57,11 +60,15 @@
     </type>
     <virtualType name="GentoOcaBranchGridCollection" type="Gento\Oca\Model\ResourceModel\Branch\Collection">
         <arguments>
-            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
+            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document
+            </argument>
             <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Branch</argument>
             <argument name="idFieldName" xsi:type="string">branch_id</argument>
             <argument name="eventPrefix" xsi:type="string">gento_oca_branch_collection</argument>
             <argument name="eventObject" xsi:type="string">branch_collection</argument>
         </arguments>
     </virtualType>
+    <type name="Magento\Sales\Api\Data\OrderInterface">
+        <plugin name="gento_oca_get_shipping_method" type="Gento\Oca\Plugin\Api\OrderInterfacePlugin"/>
+    </type>
 </config>
