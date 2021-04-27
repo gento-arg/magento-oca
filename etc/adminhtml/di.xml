@@ -61,4 +61,10 @@
             </argument>
         </arguments>
     </type>
+    <type name="Gento\Oca\Controller\Adminhtml\History\Index">
+        <arguments>
+            <argument name="activeMenuItem" xsi:type="string">Gento_Oca::history</argument>
+            <argument name="pageTitle" xsi:type="string" translate="true">History</argument>
+        </arguments>
+    </type>
 </config>

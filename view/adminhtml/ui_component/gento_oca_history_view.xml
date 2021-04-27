@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">gento_oca_history_view.history_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">History Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="back" class="Gento\Oca\Block\Adminhtml\Button\Back"/>
+        </buttons>
+        <namespace>gento_oca_history_view</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>gento_oca_history_view.history_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="history_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <dataProvider class="Gento\Oca\Model\History\DataProvider" name="history_form_data_source">
+            <settings>
+                <requestFieldName>request_id</requestFieldName>
+                <primaryFieldName>request_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">History Information</label>
+        </settings>
+        <field name="request_url" formElement="input">
+            <settings>
+                <elementTmpl>Gento_Oca/view/fields/text</elementTmpl>
+                <label translate="true">Request URL</label>
+                <imports>
+                    <link name="value">${ $.provider }:data.request_url</link>
+                </imports>
+            </settings>
+        </field>
+        <field name="request_data" formElement="input">
+            <settings>
+                <elementTmpl>Gento_Oca/view/fields/raw</elementTmpl>
+                <label translate="true">Request Data</label>
+                <imports>
+                    <link name="value">${ $.provider }:data.request_data</link>
+                </imports>
+            </settings>
+        </field>
+        <field name="response_data" formElement="input">
+            <settings>
+                <elementTmpl>Gento_Oca/view/fields/raw</elementTmpl>
+                <label translate="true">Reponse Data</label>
+                <imports>
+                    <link name="value">${ $.provider }:data.response_data</link>
+                </imports>
+            </settings>
+        </field>
+        <field name="status" formElement="input">
+            <settings>
+                <elementTmpl>Gento_Oca/view/fields/field</elementTmpl>
+                <label translate="true">Status</label>
+                <imports>
+                    <link name="value">${ $.provider }:data."</link>
+                </imports>
+            </settings>
+        </field>
+    </fieldset>
+</form>

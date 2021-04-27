@@ -1,10 +1,13 @@
 <?php
+
 namespace Gento\Oca\Ui\Provider;
+
+use Gento\Oca\Model\ResourceModel\AbstractCollection;
 
 interface CollectionProviderInterface
 {
     /**
-     * @return \Gento\Oca\Model\ResourceModel\AbstractCollection
+     * @return AbstractCollection
      */
     public function getCollection();
 }

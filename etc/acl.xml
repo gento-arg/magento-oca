@@ -7,6 +7,7 @@
                     <resource id="Gento_Oca::oca" title="OCA" sortOrder="45">
                         <resource id="Gento_Oca::operatories" title="Operatories" />
                         <resource id="Gento_Oca::branches" title="Branches" />
+                        <resource id="Gento_Oca::history" title="History Requests" />
                     </resource>
                 </resource>
             </resource>
