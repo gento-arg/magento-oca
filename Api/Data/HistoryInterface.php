@@ -12,6 +12,7 @@ interface HistoryInterface
     const REQUEST_ID = 'request_id';
     const REQUEST_URL = 'request_url';
     const RESPONSE_DATA = 'response_data';
+    const SERVICE = 'service';
 
     /**
      * @param int $id
@@ -56,4 +57,15 @@ interface HistoryInterface
      * @return string
      */
     public function getResponseData();
+
+    /**
+     * @param string $data
+     * @return HistoryInterface
+     */
+    public function setService($data);
+
+    /**
+     * @return string
+     */
+    public function getService();
 }

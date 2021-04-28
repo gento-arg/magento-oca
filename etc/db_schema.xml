@@ -65,6 +65,7 @@
         <column xsi:type="text" name="request_url" nullable="false" comment="Endpoint URL"/>
         <column xsi:type="text" name="request_data" nullable="true" comment="Request data"/>
         <column xsi:type="text" name="response_data" nullable="false" comment="Response data"/>
+        <column xsi:type="varchar" name="service" nullable="false" comment="Service called"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
                 comment="Request Called at"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">

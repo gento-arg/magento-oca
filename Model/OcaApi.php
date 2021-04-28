@@ -225,13 +225,14 @@ class OcaApi
     public function requestShipment(DataObject $request)
     {
         $operativa = $request->getOperativa();
-        $centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
-        $centroCosto = $centros[0]['NroCentroCosto'];
-
-        $request->setCentroCosto($centroCosto);
+        //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
+        //$centroCosto = $centros[0]['NroCentroCosto'];
+        //
+        //$request->setCentroCosto($centroCosto);
         $request->setCentroCosto('');
 
         $xmlOr = $this->getXmlOR($request);
+        $xmlOr = mb_convert_encoding($xmlOr, 'ISO-8859-1', 'UTF-8');
         return $this->getIngresoORMultiple(
             $this->getUsername(),
             $this->getPassword(),
@@ -643,6 +644,7 @@ class OcaApi
         }
         $history = $this->historyFactory->create();
         $history->setRequestUrl($url)
+            ->setService($service)
             ->setRequestData($this->jsonHelper->serialize($data));
 
         $curlClient->post($url, $data);

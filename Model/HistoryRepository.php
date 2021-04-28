@@ -193,6 +193,32 @@ class HistoryRepository implements HistoryRepositoryInterface
     }
 
     /**
+     * @return string[]
+     */
+    public function getServicesList(): array
+    {
+        $collection = $this->historyCollectionFactory->create();
+        $select = $collection->getSelect()->reset()
+            ->from($collection->getMainTable(), 'service')
+            ->group('service');
+        return $this->resource->getConnection()
+            ->fetchCol($select);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getStatusList(): array
+    {
+        $collection = $this->historyCollectionFactory->create();
+        $select = $collection->getSelect()->reset()
+            ->from($collection->getMainTable(), 'status')
+            ->group('status');
+        return $this->resource->getConnection()
+            ->fetchCol($select);
+    }
+
+    /**
      * Helper function that adds a FilterGroup to the collection.
      *
      * @param FilterGroup $filterGroup

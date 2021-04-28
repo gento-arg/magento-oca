@@ -44,6 +44,15 @@
                 </imports>
             </settings>
         </field>
+        <field name="service" formElement="input">
+            <settings>
+                <elementTmpl>Gento_Oca/view/fields/text</elementTmpl>
+                <label translate="true">Service</label>
+                <imports>
+                    <link name="value">${ $.provider }:data.service</link>
+                </imports>
+            </settings>
+        </field>
         <field name="request_data" formElement="input">
             <settings>
                 <elementTmpl>Gento_Oca/view/fields/raw</elementTmpl>
@@ -64,10 +73,10 @@
         </field>
         <field name="status" formElement="input">
             <settings>
-                <elementTmpl>Gento_Oca/view/fields/field</elementTmpl>
+                <elementTmpl>Gento_Oca/view/fields/text</elementTmpl>
                 <label translate="true">Status</label>
                 <imports>
-                    <link name="value">${ $.provider }:data."</link>
+                    <link name="value">${ $.provider }:data.status</link>
                 </imports>
             </settings>
         </field>

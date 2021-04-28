@@ -34,6 +34,16 @@ interface HistoryRepositoryInterface
     public function getList(SearchCriteriaInterface $searchCriteria);
 
     /**
+     * @return string[]
+     */
+    public function getServicesList(): array;
+
+    /**
+     * @return string[]
+     */
+    public function getStatusList(): array;
+
+    /**
      * clear caches instances
      * @return void
      */

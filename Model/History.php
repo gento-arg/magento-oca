@@ -94,6 +94,22 @@ class History extends AbstractModel implements HistoryInterface
     }
 
     /**
+     * @inheritDoc
+     */
+    public function setService($data)
+    {
+        return $this->setData(HistoryInterface::SERVICE, $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getService()
+    {
+        return $this->getData(HistoryInterface::SERVICE);
+    }
+
+    /**
      * Initialize resource model
      *
      * @return void

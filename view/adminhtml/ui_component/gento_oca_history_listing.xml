@@ -68,28 +68,39 @@
         <paging name="listing_paging"/>
     </listingToolbar>
     <columns name="gento_oca_history_columns">
-        <column name="request_id">
-            <settings>
-                <filter>textRange</filter>
-                <label translate="true">ID</label>
-                <sorting>asc</sorting>
-            </settings>
-        </column>
-
         <column name="request_url">
             <settings>
                 <filter>text</filter>
                 <label translate="true">Endpoint URL</label>
             </settings>
         </column>
-
-        <column name="created_at">
+        <column name="service" component="Magento_Ui/js/grid/columns/select">
             <settings>
-                <filter>text</filter>
-                <label translate="true">Created At</label>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <options class="Gento\Oca\Model\Config\Source\HistoryService"/>
+                <label translate="true">Service</label>
             </settings>
         </column>
-
+        <column name="status" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <options class="Gento\Oca\Model\Config\Source\HistoryStatus"/>
+                <label translate="true">Status</label>
+            </settings>
+        </column>
+         <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">dateRange</item>
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
+                    <item name="dataType" xsi:type="string">date</item>
+                    <item name="sorting" xsi:type="string">desc</item>
+                    <item name="label" xsi:type="string" translate="true">Created Date</item>
+                </item>
+            </argument>
+        </column>
         <actionsColumn name="actions" class="Gento\Oca\Ui\Component\Listing\Column\HistoryActions">
             <settings>
                 <indexField>request_id</indexField>

@@ -47,7 +47,9 @@
             "request_url": true,
             "request_data": true,
             "response_data": true,
-            "created_at": true
+            "created_at": true,
+            "status": true,
+            "service": true
         },
         "constraint": {
             "PRIMARY": true
