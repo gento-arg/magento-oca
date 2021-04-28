@@ -39,6 +39,7 @@ class Uninstall implements UninstallInterface
                 'namespace IN (?)' => [
                     'gento_oca_operatory_listing',
                     'gento_oca_branch_listing',
+                    'gento_oca_history_listing',
                 ],
             ]
         );
@@ -47,6 +48,9 @@ class Uninstall implements UninstallInterface
         }
         if ($setup->tableExists('oca_branches')) {
             $setup->getConnection()->dropTable('oca_branches');
+        }
+        if ($setup->tableExists('oca_webservice_requests')) {
+            $setup->getConnection()->dropTable('oca_webservice_requests');
         }
     }
 }

@@ -40,5 +40,19 @@
             "PRIMARY": true,
             "OCA_BRANCHES_CODE": true
         }
+    },
+    "oca_webservice_requests": {
+        "column": {
+            "request_id": true,
+            "request_url": true,
+            "request_data": true,
+            "response_data": true,
+            "created_at": true,
+            "status": true,
+            "service": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
     }
 }

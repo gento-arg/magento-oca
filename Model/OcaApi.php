@@ -6,6 +6,8 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use Exception;
+use Gento\Oca\Api\Data\HistoryInterfaceFactory;
+use Gento\Oca\Api\HistoryRepositoryInterface;
 use Gento\Oca\Helper\ArrayToXML;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
@@ -13,6 +15,8 @@ use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
+use Magento\Framework\Serialize\Serializer\Json as JsonHelper;
+use Throwable;
 use Zend_Date;
 
 class OcaApi
@@ -45,6 +49,14 @@ class OcaApi
      */
     protected $curlFactory;
     /**
+     * @var HistoryInterfaceFactory
+     */
+    protected $historyFactory;
+    /**
+     * @var HistoryRepositoryInterface
+     */
+    protected $historyRepository;
+    /**
      * @var string
      */
     protected $_cuit;
@@ -55,17 +67,25 @@ class OcaApi
      * @param ArrayToXML $arrayToXML
      * @param EncryptorInterface $encryptor
      * @param CurlFactory $curlFactory
+     * @param HistoryInterfaceFactory $historyFactory
+     * @param HistoryRepositoryInterface $historyRepository
      */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ArrayToXML $arrayToXML,
         EncryptorInterface $encryptor,
-        CurlFactory $curlFactory
+        CurlFactory $curlFactory,
+        HistoryInterfaceFactory $historyFactory,
+        HistoryRepositoryInterface $historyRepository,
+        JsonHelper $jsonHelper
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->arrayToXML = $arrayToXML;
         $this->encryptor = $encryptor;
         $this->curlFactory = $curlFactory;
+        $this->historyFactory = $historyFactory;
+        $this->historyRepository = $historyRepository;
+        $this->jsonHelper = $jsonHelper;
 
         $this->_cuit = $this->getFixedCuit($scopeConfig->getValue(self::XML_PATH_CUIT));
         $this->_serviceEpakUrl = trim($scopeConfig->getValue(self::XML_PATH_EPAK_SERVICE_URL));
@@ -205,13 +225,14 @@ class OcaApi
     public function requestShipment(DataObject $request)
     {
         $operativa = $request->getOperativa();
-        $centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
-        $centroCosto = $centros[0]['NroCentroCosto'];
-
-        $request->setCentroCosto($centroCosto);
+        //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
+        //$centroCosto = $centros[0]['NroCentroCosto'];
+        //
+        //$request->setCentroCosto($centroCosto);
         $request->setCentroCosto('');
 
         $xmlOr = $this->getXmlOR($request);
+        $xmlOr = mb_convert_encoding($xmlOr, 'ISO-8859-1', 'UTF-8');
         return $this->getIngresoORMultiple(
             $this->getUsername(),
             $this->getPassword(),
@@ -621,12 +642,26 @@ class OcaApi
         } else {
             $url = $this->getServiceUrl($service);
         }
+        $history = $this->historyFactory->create();
+        $history->setRequestUrl($url)
+            ->setService($service)
+            ->setRequestData($this->jsonHelper->serialize($data));
 
         $curlClient->post($url, $data);
+        $response = $curlClient->getBody();
+        $history->setResponseData($response);
 
-        $this->handleError($curlClient);
+        try {
+            $this->handleError($curlClient);
+            $history->setStatus('success');
+        } catch (Throwable $e) {
+            $history->setStatus('error');
+            throw $e;
+        } finally {
+            $this->historyRepository->save($history);
+        }
 
-        return $curlClient->getBody();
+        return $response;
     }
 
     protected function handleError(Curl $curl)
@@ -637,7 +672,7 @@ class OcaApi
         if ($errors->count() == 0) {
             return;
         }
-        throw new \Exception($errors->item(0)->nodeValue);
+        throw new Exception($errors->item(0)->nodeValue);
     }
 
     protected function getXPath($xmlString)

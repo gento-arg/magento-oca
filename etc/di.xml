@@ -7,6 +7,9 @@
     <preference for="Gento\Oca\Api\BranchRepositoryInterface" type="Gento\Oca\Model\BranchRepository"/>
     <preference for="Gento\Oca\Api\Data\BranchInterface" type="Gento\Oca\Model\Branch"/>
     <preference for="Gento\Oca\Api\Data\BranchSearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
+    <preference for="Gento\Oca\Api\HistoryRepositoryInterface" type="Gento\Oca\Model\HistoryRepository"/>
+    <preference for="Gento\Oca\Api\Data\HistoryInterface" type="Gento\Oca\Model\History"/>
+    <preference for="Gento\Oca\Api\Data\HistorySearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
     <type name="Magento\Backend\Controller\Adminhtml\Index\GlobalSearch">
         <arguments>
             <argument name="searchModules" xsi:type="array">
@@ -27,6 +30,8 @@
                 <item name="gento_oca_operatory_listing_data_source" xsi:type="string">GentoOcaOperatoryGridCollection
                 </item>
                 <item name="gento_oca_branch_listing_data_source" xsi:type="string">GentoOcaBranchGridCollection</item>
+                <item name="gento_oca_history_listing_data_source"
+                      xsi:type="string">GentoOcaHistoryGridCollection</item>
             </argument>
         </arguments>
     </type>
@@ -41,8 +46,8 @@
     </type>
     <virtualType name="GentoOcaOperatoryGridCollection" type="Gento\Oca\Model\ResourceModel\Operatory\Collection">
         <arguments>
-            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document
-            </argument>
+            <argument name="model"
+                      xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
             <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Operatory</argument>
             <argument name="idFieldName" xsi:type="string">operatory_id</argument>
             <argument name="eventPrefix" xsi:type="string">gento_oca_operatory_collection</argument>
@@ -60,12 +65,31 @@
     </type>
     <virtualType name="GentoOcaBranchGridCollection" type="Gento\Oca\Model\ResourceModel\Branch\Collection">
         <arguments>
-            <argument name="model" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document
-            </argument>
+            <argument name="model"
+                      xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
             <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\Branch</argument>
             <argument name="idFieldName" xsi:type="string">branch_id</argument>
             <argument name="eventPrefix" xsi:type="string">gento_oca_branch_collection</argument>
             <argument name="eventObject" xsi:type="string">branch_collection</argument>
+        </arguments>
+    </virtualType>
+    <type name="Gento\Oca\Model\ResourceModel\History\Collection">
+        <arguments>
+            <argument name="model" xsi:type="string">Gento\Oca\Model\History</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\History</argument>
+            <argument name="idFieldName" xsi:type="string">request_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_history_collection</argument>
+            <argument name="eventObject" xsi:type="string">history_collection</argument>
+        </arguments>
+    </type>
+    <virtualType name="GentoOcaHistoryGridCollection" type="Gento\Oca\Model\ResourceModel\History\Collection">
+        <arguments>
+            <argument name="model"
+                      xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\Document</argument>
+            <argument name="resourceModel" xsi:type="string">Gento\Oca\Model\ResourceModel\History</argument>
+            <argument name="idFieldName" xsi:type="string">request_id</argument>
+            <argument name="eventPrefix" xsi:type="string">gento_oca_history_collection</argument>
+            <argument name="eventObject" xsi:type="string">history_collection</argument>
         </arguments>
     </virtualType>
     <type name="Magento\Sales\Api\Data\OrderInterface">
