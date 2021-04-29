@@ -461,7 +461,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result = $this->_trackFactory->create();
             $code = $this->getConfigData('code');
             $title = $this->getConfigData('title');
-            $url = 'https://www1.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
+            $url = 'https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
             $trackingResults = $this->ocaApi->getTracking($tracking);
             /** @var Status $status */
             $status = $this->_trackStatusFactory->create();
