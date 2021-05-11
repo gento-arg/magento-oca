@@ -402,6 +402,10 @@ class OcaApi
                 'address_street' => $row['Calle'],
                 'address_number' => $row['Numero'],
                 'address_floor' => $row['Piso'],
+                'address_dpt' => $row['Depto'],
+                'address_tower' => $row['Torre'],
+                'telephone' => $row['Telefono'],
+                'email' => $row['eMail'],
                 'city' => $row['Localidad'],
                 'zipcode' => $row['CodigoPostal'],
                 'active' => true,
@@ -669,10 +673,13 @@ class OcaApi
         $xpath = $this->getXPath($curl->getBody());
 
         $errors = $xpath->query("//Errores/Error/Descripcion");
-        if ($errors->count() == 0) {
-            return;
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
         }
-        throw new Exception($errors->item(0)->nodeValue);
+        $errors = $xpath->query("//NewDataSet/Table1/Error");
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
+        }
     }
 
     protected function getXPath($xmlString)

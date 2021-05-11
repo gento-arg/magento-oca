@@ -65,6 +65,7 @@
                 <field id="cuit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1"
                        showInStore="1">
                     <label>CUIT</label>
+                    <comment>Ingrese el numero sin guiones. Ej: 30536259194</comment>
                 </field>
                 <field id="service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
                        showInWebsite="0" showInStore="0">

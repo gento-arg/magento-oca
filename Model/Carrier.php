@@ -226,15 +226,20 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $packageValue,
         $packageQty
     ) {
-        $tarifa = $this->ocaApi->getQuote(
-            $operatory->getCode(),
-            $weight,
-            $volume,
-            $senderZipcode,
-            $receiverZipcode,
-            $packageQty,
-            $packageValue
-        );
+        try {
+            $tarifa = $this->ocaApi->getQuote(
+                $operatory->getCode(),
+                $weight,
+                $volume,
+                $senderZipcode,
+                $receiverZipcode,
+                $packageQty,
+                $packageValue
+            );
+        } catch (\Throwable $e) {
+            return;
+        }
+
 
         if ($tarifa == null) {
             return;
@@ -243,48 +248,13 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $quoteValue = $tarifa->Total;
 
         $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
-        if ($operatory->getUsesIdci()) {
-            $branches = $this->ocaApi->getBranchesZipCode($receiverZipcode);
-
-            $this->eventManager->dispatch('gento_oca_get_branch_data', [
-                'branchs_data' => $branches,
-                'operatory' => $operatory->getCode(),
-            ]);
-
-            /**
-             * @var BranchRepository $branchRepository
-             */
-            $branchRepository = $this->branchRepositoryFactory->create();
-            foreach ($branches as $branchData) {
-                /**
-                 * @var Branch $branch
-                 */
-                $branch = $branchRepository->getByCode($branchData['code']);
-                if (!$branch->getActive()) {
-                    continue;
-                }
-
-                $code = $operatory->getCode() . "_" . $branch->getCode();
-                $description = $operatory->getName() . " " . $branch->getFullDescription();
-
-                $this->_addRate(
-                    $rateResult,
-                    $operatory,
-                    $code,
-                    $quoteValue,
-                    $plazoEntrega,
-                    $description
-                );
-            }
-        } else {
-            $this->_addRate(
-                $rateResult,
-                $operatory,
-                $operatory->getCode(),
-                $quoteValue,
-                $plazoEntrega
-            );
-        }
+        $this->_addRate(
+            $rateResult,
+            $operatory,
+            $operatory->getCode(),
+            $quoteValue,
+            $plazoEntrega
+        );
 
         return $rateResult;
     }

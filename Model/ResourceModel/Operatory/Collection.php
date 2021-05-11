@@ -20,11 +20,17 @@ class Collection extends AbstractCollection
         );
     }
 
+    /**
+     * @return Collection
+     */
     public function getActiveList()
     {
         return $this->addFieldToFilter('active', ['eq' => true]);
     }
 
+    /**
+     * @return Collection
+     */
     public function getUsesIdci()
     {
         return $this->addFieldToFilter('uses_idci', ['eq' => true]);
