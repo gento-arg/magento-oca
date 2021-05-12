@@ -41,8 +41,19 @@ define([
                 this.loadBranches(quote.shippingAddress().postcode)
             });
             this.selectedBranch.subscribe(() => {
-                console.log(this.selectedBranch())
                 this.hasWarning(!this.selectedBranch())
+                let ocaBranch = quote.shippingAddress().customAttributes
+                    .find(e => e.attribute_code == 'gento_oca_banch');
+                if (ocaBranch == undefined) {
+                    ocaBranch = {
+                        attribute_code: 'gento_oca_banch',
+                    };
+                    quote.shippingAddress().customAttributes.push(ocaBranch)
+                }
+                ocaBranch.value = null;
+                if (this.selectedBranch()) {
+                    ocaBranch.value = this.selectedBranch().code;
+                }
             })
             return this;
         },

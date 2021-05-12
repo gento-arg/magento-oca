@@ -1,55 +1,52 @@
-<tr class="row" data-bind="visible: visible">
-    <td class="col col-method"></td>
-    <td class="col col-branch" colspan="3">
-        <div id="additional-shipping-option-wrapper">
-            <form class="form form-oca-shipping-method" id="form-oca-shipping-method" data-mage-init='{"validation":{}}'
-                  novalidate="novalidate">
-                <div data-bind="attr: {'data-hasrequired': $t('* Required Fields')}">
-                    <select aria-required="true" data-bind="
+<div data-bind="visible: visible">
+    <div id="additional-shipping-option-wrapper">
+        <form class="form form-oca-shipping-method" id="form-oca-shipping-method" data-mage-init='{"validation":{}}'
+              novalidate="novalidate">
+            <div data-bind="attr: {'data-hasrequired': $t('* Required Fields')}">
+                <select aria-required="true" data-bind="
                                 options: branchList,
                                 value: selectedBranch,
                                 optionsText: itemLabel,
                                 optionsCaption: $t('-- Select a branch --')"
-                            data-validate="{ required: true }"
-                            name="oca_branches" id="branch_list">
-                    </select>
-                    <div id="validate-branch-message" class="message notice" data-bind="visible: hasWarning">
-                        <!-- ko i18n: 'The branch is required' --><!-- /ko -->
-                    </div>
-                    <!-- ko if: selectedBranch -->
-                    <div data-bind="visible: selectedBranch">
-                        <dl>
-                            <dt data-bind="i18n: 'Description'"></dt>
-                            <dd data-bind="text: selectedBranch().description"></dd>
-                            <dt data-bind="i18n: 'Address'"></dt>
-                            <dd data-bind="text: selectedBranchAddress()"></dd>
-                            <!-- ko if: selectedBranch().address_floor -->
-                            <dt data-bind="i18n: 'Floor'"></dt>
-                            <dd data-bind="text: selectedBranch().address_floor"></dd>
-                            <!-- /ko -->
-                            <!-- ko if: selectedBranch().address_dpt -->
-                            <dt data-bind="i18n: 'Dpt'"></dt>
-                            <dd data-bind="text: selectedBranch().address_dpt"></dd>
-                            <!-- /ko -->
-                            <!-- ko if: selectedBranch().address_tower -->
-                            <dt data-bind="i18n: 'Tower'"></dt>
-                            <dd data-bind="text: selectedBranch().address_tower"></dd>
-                            <!-- /ko -->
-                            <!-- ko if: selectedBranch().telephone -->
-                            <dt data-bind="i18n: 'Telephone'"></dt>
-                            <dd data-bind="text: selectedBranch().telephone"></dd>
-                            <!-- /ko -->
-                            <!-- ko if: selectedBranch().email -->
-                            <dt data-bind="i18n: 'Email'"></dt>
-                            <dd data-bind="text: selectedBranch().email"></dd>
-                            <!-- /ko -->
-                            <dt data-bind="i18n: 'Zip Code'"></dt>
-                            <dd data-bind="text: selectedBranch().zipcode"></dd>
-                        </dl>
-                    </div>
-                    <!-- /ko -->
+                        data-validate="{ required: true }"
+                        name="oca_branches" id="branch_list">
+                </select>
+                <div id="validate-branch-message" class="message notice" data-bind="visible: hasWarning">
+                    <!-- ko i18n: 'The branch is required' --><!-- /ko -->
                 </div>
-            </form>
-        </div>
-    </td>
-</tr>
+                <!-- ko if: selectedBranch -->
+                <div data-bind="visible: selectedBranch">
+                    <dl>
+                        <dt data-bind="i18n: 'Description'"></dt>
+                        <dd data-bind="text: selectedBranch().description"></dd>
+                        <dt data-bind="i18n: 'Address'"></dt>
+                        <dd data-bind="text: selectedBranchAddress()"></dd>
+                        <!-- ko if: selectedBranch().address_floor -->
+                        <dt data-bind="i18n: 'Floor'"></dt>
+                        <dd data-bind="text: selectedBranch().address_floor"></dd>
+                        <!-- /ko -->
+                        <!-- ko if: selectedBranch().address_dpt -->
+                        <dt data-bind="i18n: 'Dpt'"></dt>
+                        <dd data-bind="text: selectedBranch().address_dpt"></dd>
+                        <!-- /ko -->
+                        <!-- ko if: selectedBranch().address_tower -->
+                        <dt data-bind="i18n: 'Tower'"></dt>
+                        <dd data-bind="text: selectedBranch().address_tower"></dd>
+                        <!-- /ko -->
+                        <!-- ko if: selectedBranch().telephone -->
+                        <dt data-bind="i18n: 'Telephone'"></dt>
+                        <dd data-bind="text: selectedBranch().telephone"></dd>
+                        <!-- /ko -->
+                        <!-- ko if: selectedBranch().email -->
+                        <dt data-bind="i18n: 'Email'"></dt>
+                        <dd data-bind="text: selectedBranch().email"></dd>
+                        <!-- /ko -->
+                        <dt data-bind="i18n: 'Zip Code'"></dt>
+                        <dd data-bind="text: selectedBranch().zipcode"></dd>
+                    </dl>
+                </div>
+                <!-- /ko -->
+            </div>
+        </form>
+    </div>
+</div>
