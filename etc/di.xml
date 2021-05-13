@@ -95,4 +95,10 @@
     <type name="Magento\Sales\Api\Data\OrderInterface">
         <plugin name="gento_oca_get_shipping_method" type="Gento\Oca\Plugin\Api\OrderInterfacePlugin"/>
     </type>
+
+    <!-- Puede que no sea aca-->
+    <type name="Magento\Checkout\Api\ShippingInformationManagementInterface">
+        <plugin name="gento_oca_set_branch_on_quote"
+                type="Gento\Oca\Plugin\Api\ShippingInformationManagementPlugin"/>
+    </type>
 </config>

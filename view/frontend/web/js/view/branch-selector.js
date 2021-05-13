@@ -42,18 +42,16 @@ define([
             });
             this.selectedBranch.subscribe(() => {
                 this.hasWarning(!this.selectedBranch())
-                let ocaBranch = quote.shippingAddress().customAttributes
-                    .find(e => e.attribute_code == 'gento_oca_banch');
-                if (ocaBranch == undefined) {
-                    ocaBranch = {
-                        attribute_code: 'gento_oca_banch',
-                    };
-                    quote.shippingAddress().customAttributes.push(ocaBranch)
+                let shippingMethod = quote.shippingMethod();
+                if (!shippingMethod['extension_attributes']) {
+                    shippingMethod['extension_attributes'] = {};
                 }
-                ocaBranch.value = null;
+                let ocaBranch = null;
                 if (this.selectedBranch()) {
-                    ocaBranch.value = this.selectedBranch().code;
+                    ocaBranch = this.selectedBranch().code;
                 }
+                shippingMethod['extension_attributes']['gento_oca_branch'] = ocaBranch;
+                quote.shippingMethod(shippingMethod)
             })
             return this;
         },

@@ -26,13 +26,12 @@ define([
                     return true;
                 }
 
-                let ocaBranch = quote.shippingAddress().customAttributes
-                    .find(e => e.attribute_code == 'gento_oca_banch');
-
-                if (!ocaBranch) {
+                if (!shippingMethod['extension_attributes'] ||
+                    !shippingMethod['extension_attributes']['gento_oca_branch']) {
                     this.errorValidationMessage($t('Please select the required branch.'));
                     return false;
                 }
+
                 return true;
             }
         });
