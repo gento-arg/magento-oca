@@ -24,6 +24,5 @@ class OrderInterfacePlugin
             $method = preg_replace('/^gento_oca_(.*)$/', '$1', $shippingMethod);
             return new DataObject(['carrier_code' => $carrierCode, 'method' => $method]);
         }
-
     }
 }

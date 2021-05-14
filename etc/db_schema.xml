@@ -72,7 +72,7 @@
             <column name="request_id"/>
         </constraint>
     </table>
-    <table name="quote_shipping_rate">
+    <table name="quote">
         <column name="shipping_branch" xsi:type="varchar" nullable="true"/>
     </table>
     <table name="sales_order">

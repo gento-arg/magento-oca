@@ -18,16 +18,16 @@ define([
                 }
 
                 let useIdci = window.checkoutConfig.oca.useBranches;
-                let shippingMethod = quote.shippingMethod();
-                let carrier = shippingMethod['carrier_code'];
-                let method = shippingMethod['method_code'];
+                let shippingAddress = quote.shippingAddress();
+                let carrier = shippingAddress['carrier_code'];
+                let method = shippingAddress['method_code'];
 
                 if (carrier != 'gento_oca' || !useIdci.includes(method)) {
                     return true;
                 }
 
-                if (!shippingMethod['extension_attributes'] ||
-                    !shippingMethod['extension_attributes']['gento_oca_branch']) {
+                if (!shippingAddress['extension_attributes'] ||
+                    !shippingAddress['extension_attributes']['gento_oca_branch']) {
                     this.errorValidationMessage($t('Please select the required branch.'));
                     return false;
                 }

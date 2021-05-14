@@ -42,16 +42,17 @@ define([
             });
             this.selectedBranch.subscribe(() => {
                 this.hasWarning(!this.selectedBranch())
-                let shippingMethod = quote.shippingMethod();
-                if (!shippingMethod['extension_attributes']) {
-                    shippingMethod['extension_attributes'] = {};
+                let shippingAddress = quote.shippingAddress();
+
+                if (!shippingAddress['extension_attributes']) {
+                    shippingAddress['extension_attributes'] = {};
                 }
-                let ocaBranch = null;
+                let ocaBranch = null, description = '';
                 if (this.selectedBranch()) {
                     ocaBranch = this.selectedBranch().code;
                 }
-                shippingMethod['extension_attributes']['gento_oca_branch'] = ocaBranch;
-                quote.shippingMethod(shippingMethod)
+                shippingAddress['extension_attributes']['gento_oca_branch'] = ocaBranch;
+                quote.shippingAddress(shippingAddress)
             })
             return this;
         },
