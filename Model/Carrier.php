@@ -54,11 +54,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     protected $_rateResultFactory;
 
     /**
-     * @var MethodFactory
-     */
-    protected $_rateMethodFactory;
-
-    /**
      * @var OperatoryFactory
      */
     protected $_operatoryCollectionFactory;
@@ -83,6 +78,32 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     private $helper;
 
+    /**
+     * Carrier constructor.
+     * @param ProductRepositoryInterface $productRepository
+     * @param ScopeConfigInterface $scopeConfig
+     * @param RateResultErrorFactory $rateErrorFactory
+     * @param LoggerInterface $logger
+     * @param RateFactory $rateResultFactory
+     * @param MethodFactory $rateMethodFactory
+     * @param CollectionFactory $operatoryCollectionFactory
+     * @param OcaApi $ocaApi
+     * @param BranchRepositoryFactory $branchRepositoryFactory
+     * @param ManagerInterface $eventManager
+     * @param Security $xmlSecurity
+     * @param ElementFactory $xmlElFactory
+     * @param ResultFactory $trackFactory
+     * @param ResultErrorFactory $trackErrorFactory
+     * @param StatusFactory $trackStatusFactory
+     * @param RegionFactory $regionFactory
+     * @param CountryFactory $countryFactory
+     * @param CurrencyFactory $currencyFactory
+     * @param DirectoryData $directoryData
+     * @param StockRegistryInterface $stockRegistry
+     * @param PricingHelperData $pricingHelper
+     * @param Data $helper
+     * @param array $data
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ScopeConfigInterface $scopeConfig,
@@ -109,8 +130,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         array $data = []
     ) {
         $this->productRepository = $productRepository;
-        $this->_rateResultFactory = $rateResultFactory;
-        $this->_rateMethodFactory = $rateMethodFactory;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
         $this->ocaApi = $ocaApi;
         $this->branchRepositoryFactory = $branchRepositoryFactory;
@@ -137,6 +156,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         );
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getAllowedMethods()
     {
         return [
@@ -144,6 +166,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         ];
     }
 
+    /**
+     * @inheritdoc
+     */
     public function collectRates(RateRequest $request)
     {
         if (!$this->getConfigFlag('active')) {
@@ -160,7 +185,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             }
         }
 
-        $rateResult = $this->_rateResultFactory->create();
+        $rateResult = $this->_rateFactory->create();
 
         $volume = 0;
         $freeBoxes = 0;
@@ -226,6 +251,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $packageValue,
         $packageQty
     ) {
+        $tarifa = null;
+        $errorMessage = '';
         try {
             $tarifa = $this->ocaApi->getQuote(
                 $operatory->getCode(),
@@ -237,12 +264,17 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 $packageValue
             );
         } catch (\Throwable $e) {
-            return;
+            $errorMessage = $e->getMessage();
         }
 
-
         if ($tarifa == null) {
-            return;
+            $error = $this->_rateErrorFactory->create();
+            $error->setCarrier($this->_code);
+            $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
+            $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
+            $error->setErrorMessage($errorMessage);
+            $rateResult->append($error);
+            return $rateResult;
         }
 
         $quoteValue = $tarifa->Total;
@@ -267,14 +299,16 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return true;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function isShippingLabelsAvailable()
     {
         return true;
     }
 
     /**
-     * @param DataObject|null $params
-     * @return array
+     * @inheritdoc
      */
     public function getContainerTypes(DataObject $params = null): array
     {
@@ -302,6 +336,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $description = false
     ) {
         $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
+        $shouldShowDays = $this->getConfigData('show_days');
         if ($shouldAddTax) {
             // @todo use custom shipping tax configurable on backend
             $total = 1.21 * floatval($total);
@@ -323,23 +358,24 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $description = $operatory->getName();
         }
 
+        $plazoEntregaString = '';
+        if ($shouldShowDays && $plazoEntrega) {
+            $plazoEntregaString = __('(%1 dias)', $plazoEntrega);
+        }
+        $payOnDestinationString = '';
         if ($operatory->getPaysOnDestination()) {
-            $methodTitle = __(
-                '%1. (%2 dias). Pagar %3 en destino.',
-                $description,
-                // Dias
-                $plazoEntrega,
+            $payOnDestinationString = __('Pagar %1 en destino.',
                 $this->pricingHelper->currency($total, true, false)
             );
-        } else {
-            $methodTitle = __(
-                '%1 (%2 dias)',
-                // Nombre
-                $description,
-                // Dias
-                $plazoEntrega
-            );
         }
+        $methodTitle = sprintf('%s%s%s',
+            // Nombre
+            $description,
+            // Dias
+            $plazoEntregaString,
+            // Pago en destino
+            $payOnDestinationString
+        );
         $method->setMethodTitle($methodTitle);
 
         $method->setPrice($shippingPrice);
@@ -358,9 +394,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     }
 
     /**
-     * @param DataObject $request
-     * @return mixed
-     * @throws LocalizedException
+     * @inheritdoc
      */
     protected function _doShipmentRequest(DataObject $request)
     {
@@ -420,6 +454,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $result;
     }
 
+    /**
+     * @inheritdoc
+     */
     protected function getTracking($trackings)
     {
         if (!is_array($trackings)) {
@@ -431,7 +468,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result = $this->_trackFactory->create();
             $code = $this->getConfigData('code');
             $title = $this->getConfigData('title');
-            $url = 'https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=';
+            $url = $this->getConfigData('tracking_url');
             $trackingResults = $this->ocaApi->getTracking($tracking);
             /** @var Status $status */
             $status = $this->_trackStatusFactory->create();

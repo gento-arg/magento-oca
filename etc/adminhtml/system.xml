@@ -75,6 +75,11 @@
                        showInWebsite="0" showInStore="0">
                     <label>Epak WebService URL</label>
                 </field>
+                <field id="tracking_url" translate="label" type="text" sortOrder="500" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Tracking URL</label>
+                    <comment>Ej: https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</comment>
+                </field>
                 <!-- <field id="insurance_percentage" translate="label" type="text" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Insurance percentage</label>
                     <comment>Only apply to operatories with insurance</comment>
@@ -88,6 +93,12 @@
                        showInStore="1">
                     <label>Days to send (Extra)</label>
                     <comment>This will add only on checkout info, and will not be informed to OCA</comment>
+                </field>
+                <field id="show_days" translate="label" type="select" sortOrder="191" showInDefault="1" showInWebsite="1"
+                       showInStore="1">
+                    <label>Show days to send</label>
+                    <comment>Enable the display of days on carrier</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="reception_time" translate="label" type="select" sortOrder="200" showInDefault="1"
                        showInWebsite="1" showInStore="1">
