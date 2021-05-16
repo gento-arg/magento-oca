@@ -47,12 +47,13 @@ define([
                 if (!shippingAddress['extension_attributes']) {
                     shippingAddress['extension_attributes'] = {};
                 }
-                let ocaBranch = null;
+                let ocaBranch = null, description = null;
                 if (this.selectedBranch()) {
                     ocaBranch = this.selectedBranch().code;
+                    description = this.selectedBranch().branch_description;
                 }
                 shippingAddress['extension_attributes']['gento_oca_branch'] = ocaBranch;
-                shippingAddress['extension_attributes']['gento_oca_branch_description'] = ocaBranch;
+                shippingAddress['extension_attributes']['gento_oca_branch_description'] = description;
                 quote.shippingAddress(shippingAddress)
             })
             return this;

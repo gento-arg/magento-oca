@@ -64,11 +64,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     private $ocaApi;
 
     /**
-     * @param BranchRepositoryFactory
-     */
-    private $branchRepositoryFactory;
-
-    /**
      * @param ManagerInterface
      */
     private $eventManager;
@@ -88,7 +83,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      * @param MethodFactory $rateMethodFactory
      * @param CollectionFactory $operatoryCollectionFactory
      * @param OcaApi $ocaApi
-     * @param BranchRepositoryFactory $branchRepositoryFactory
      * @param ManagerInterface $eventManager
      * @param Security $xmlSecurity
      * @param ElementFactory $xmlElFactory
@@ -113,7 +107,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         MethodFactory $rateMethodFactory,
         CollectionFactory $operatoryCollectionFactory,
         OcaApi $ocaApi,
-        BranchRepositoryFactory $branchRepositoryFactory,
         ManagerInterface $eventManager,
         Security $xmlSecurity,
         ElementFactory $xmlElFactory,
@@ -132,7 +125,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $this->productRepository = $productRepository;
         $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
         $this->ocaApi = $ocaApi;
-        $this->branchRepositoryFactory = $branchRepositoryFactory;
         $this->eventManager = $eventManager;
         $this->pricingHelper = $pricingHelper;
         $this->helper = $helper;
