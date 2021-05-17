@@ -352,7 +352,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
 
         $plazoEntregaString = '';
         if ($shouldShowDays && $plazoEntrega) {
-            $plazoEntregaString = __('(%1 dias)', $plazoEntrega);
+            $plazoEntregaString = __('(Despacho en %1 dias)', $plazoEntrega);
         }
         $payOnDestinationString = '';
         if ($operatory->getPaysOnDestination()) {
@@ -419,8 +419,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $metodo = explode('_', $request->getShippingMethod());
             $operativa = $metodo[0];
             $centroImposicion = '0';
-            if (isset($metodo[1])) {
-                $centroImposicion = $metodo[1];
+            if ($request->getOrderShipment()->getOrder()->getShippingBranch()) {
+                $centroImposicion = $request->getOrderShipment()->getOrder()->getShippingBranch();
             }
             $request->setOperativa($operativa);
             $request->setCentroImposicion($centroImposicion);

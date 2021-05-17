@@ -16,10 +16,6 @@
                        showInStore="0">
                     <label>Titulo</label>
                 </field>
-                <field id="descripcion" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1"
-                       showInStore="1">
-                    <label>Descripcion</label>
-                </field>
                 <field id="allowspecific" translate="label" type="allowspecific" sortOrder="40" showInDefault="1"
                        showInWebsite="1" showInStore="1">
                     <label>Allow Specific Country</label>
@@ -75,7 +71,7 @@
                        showInWebsite="0" showInStore="0">
                     <label>Epak WebService URL</label>
                 </field>
-                <field id="tracking_url" translate="label" type="text" sortOrder="500" showInDefault="1"
+                <field id="tracking_url" translate="label" type="text" sortOrder="510" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>Tracking URL</label>
                     <comment>Ej: https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</comment>
