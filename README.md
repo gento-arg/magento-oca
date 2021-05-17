@@ -4,8 +4,8 @@
 
 * [Instalación](#Instalación)
 * [Configuración](#Configuración)
-    * [Tienda](#Configuración de tienda)
-    * [Método](#Configuración de método de envío)
+    * [Tienda](#Configuración-de-tienda)
+    * [Método](#Configuración-de-método-de-envío)
     * [Operatorias](#Operatorias)
 * [Desinstalar](#Desinstalar)
 * [Contributing](#Contributing)
