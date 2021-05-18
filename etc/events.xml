@@ -1,6 +1,11 @@
 <?xml version="1.0" ?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <event name="gento_oca_get_branch_data">
-        <observer name="save_branch_data" instance="Gento\Oca\Observer\SaveBranchData" />
+        <observer name="save_branch_data" instance="Gento\Oca\Observer\SaveBranchData"/>
+    </event>
+    <event name="sales_order_place_before">
+        <observer name="gento_oca_sales_model_place_order_before"
+                  instance="Gento\Oca\Observer\PlaceOrderBeforeObserver"/>
     </event>
 </config>

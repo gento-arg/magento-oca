@@ -100,6 +100,7 @@ class OcaApi
 
     /**
      * @return array[]
+     * @throws Throwable
      */
     public function getBranches()
     {
@@ -121,6 +122,7 @@ class OcaApi
     /**
      * @param $zipcode
      * @return array|array[]
+     * @throws Throwable
      */
     public function getBranchesZipCode($zipcode)
     {
@@ -161,6 +163,7 @@ class OcaApi
      * @param $packageQty
      * @param $packageValue
      * @return object
+     * @throws Throwable
      */
     public function getQuote(
         $operatoryCode,
@@ -402,6 +405,10 @@ class OcaApi
                 'address_street' => $row['Calle'],
                 'address_number' => $row['Numero'],
                 'address_floor' => $row['Piso'],
+                'address_dpt' => $row['Depto'] ?? null,
+                'address_tower' => $row['Torre'] ?? null,
+                'telephone' => $row['Telefono'] ?? null,
+                'email' => $row['eMail'] ?? null,
                 'city' => $row['Localidad'],
                 'zipcode' => $row['CodigoPostal'],
                 'active' => true,
@@ -669,10 +676,13 @@ class OcaApi
         $xpath = $this->getXPath($curl->getBody());
 
         $errors = $xpath->query("//Errores/Error/Descripcion");
-        if ($errors->count() == 0) {
-            return;
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
         }
-        throw new Exception($errors->item(0)->nodeValue);
+        $errors = $xpath->query("//NewDataSet/Table1/Error");
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
+        }
     }
 
     protected function getXPath($xmlString)

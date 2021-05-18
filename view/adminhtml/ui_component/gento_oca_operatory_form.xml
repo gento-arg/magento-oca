@@ -53,7 +53,7 @@
                 <dataScope>operatory_id</dataScope>
             </settings>
         </field>
-        
+
         <field name="name" formElement="input">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
@@ -118,7 +118,7 @@
             </argument>
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Uses id centro imposicion</label>
+                <label translate="true">Uses branches</label>
                 <dataScope>uses_idci</dataScope>
             </settings>
             <formElements>

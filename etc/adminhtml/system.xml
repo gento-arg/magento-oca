@@ -16,10 +16,6 @@
                        showInStore="0">
                     <label>Titulo</label>
                 </field>
-                <field id="descripcion" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1"
-                       showInStore="1">
-                    <label>Descripcion</label>
-                </field>
                 <field id="allowspecific" translate="label" type="allowspecific" sortOrder="40" showInDefault="1"
                        showInWebsite="1" showInStore="1">
                     <label>Allow Specific Country</label>
@@ -65,6 +61,7 @@
                 <field id="cuit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1"
                        showInStore="1">
                     <label>CUIT</label>
+                    <comment>Ingrese el numero sin guiones. Ej: 30536259194</comment>
                 </field>
                 <field id="service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
                        showInWebsite="0" showInStore="0">
@@ -73,6 +70,11 @@
                 <field id="elocker_service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>Epak WebService URL</label>
+                </field>
+                <field id="tracking_url" translate="label" type="text" sortOrder="510" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Tracking URL</label>
+                    <comment>Ej: https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</comment>
                 </field>
                 <!-- <field id="insurance_percentage" translate="label" type="text" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Insurance percentage</label>
@@ -87,6 +89,13 @@
                        showInStore="1">
                     <label>Days to send (Extra)</label>
                     <comment>This will add only on checkout info, and will not be informed to OCA</comment>
+                </field>
+                <field id="show_days" translate="label" type="select" sortOrder="191" showInDefault="1"
+                       showInWebsite="1"
+                       showInStore="1">
+                    <label>Show days to send</label>
+                    <comment>Enable the display of days on carrier</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="reception_time" translate="label" type="select" sortOrder="200" showInDefault="1"
                        showInWebsite="1" showInStore="1">
@@ -104,6 +113,17 @@
                        showInWebsite="1" showInStore="1">
                     <label>Disabled Postal codes</label>
                     <comment>One by line</comment>
+                </field>
+                <field id="branch_description" translate="label" type="textarea" sortOrder="230" showInDefault="1"
+                       showInWebsite="1" showInStore="1">
+                    <label>Branch description</label>
+                    <comment>Variables: code, short_name, name, description, address_street, address_number, address_floor, address_dpt, address_tower, telephone, email, city, zipcode</comment>
+                </field>
+                <field id="branch_autopopulate" translate="label" type="select" sortOrder="231" showInDefault="1" showInWebsite="1"
+                       showInStore="1">
+                    <label>Populate Branches From Addresses Zip/Postal Codes on Checkout</label>
+                    <comment>Enable to auto populate branches</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <group id="volume" translate="label" type="text" sortOrder="900" showInDefault="1" showInWebsite="1"
                        showInStore="1">
