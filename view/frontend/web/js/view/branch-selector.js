@@ -105,7 +105,7 @@ define([
         },
 
         itemLabel: function (item) {
-            return `${item.zipcode} - ${item.name}`;
+            return `${item.zipcode} - ${item.name} (${item.address_street} ${item.address_number})`;
         },
 
         selectedBranchAddress: function () {

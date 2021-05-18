@@ -32,12 +32,15 @@ class ShippingInformationManagementPlugin
         $cartId,
         ShippingInformationInterface $addressInformation
     ) {
-        $extAttributes = $addressInformation->getShippingAddress()->getExtensionAttributes();
-        $ocaBranch = $extAttributes->getGentoOcaBranch();
+        if ($addressInformation->getShippingCarrierCode() === 'gento_oca') {
+            $extAttributes = $addressInformation->getShippingAddress()->getExtensionAttributes();
+            $ocaBranch = $extAttributes->getGentoOcaBranch();
+            if ($ocaBranch) {
+                $quote = $this->quoteRepository->getActive($cartId);
 
-        $quote = $this->quoteRepository->getActive($cartId);
-
-        $quote->setShippingBranch($ocaBranch);
-        $this->quoteRepository->save($quote);;
+                $quote->setShippingBranch($ocaBranch);
+                $this->quoteRepository->save($quote);
+            }
+        }
     }
 }

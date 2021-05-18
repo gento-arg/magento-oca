@@ -46,3 +46,5 @@ Volume,Volúmen
 "Pays on destination branch","Pago en sucursal"
 "Add New Operatory","Agregar operatoria"
 "Are you sure you wan't to delete selected Operatories?","¿Está seguro de borrar las operatorias seleccionadas?"
+"-- Select a branch --", "-- Seleccionar una sucursal --"
+"The branch is required", "La sucursal es requerida"
