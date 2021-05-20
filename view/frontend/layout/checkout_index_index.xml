@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceBlock name="checkout.root">
             <arguments>
@@ -15,8 +16,23 @@
                                                     <item name="children" xsi:type="array">
                                                         <item name="shipping-rates-validation" xsi:type="array">
                                                             <item name="children" xsi:type="array">
-                                                                <item name="gento_oca-rates-validation" xsi:type="array">
+                                                                <item name="gento_oca-rates-validation"
+                                                                      xsi:type="array">
                                                                     <item name="component" xsi:type="string">Gento_Oca/js/view/shipping-rates-validation</item>
+                                                                </item>
+                                                            </item>
+                                                        </item>
+                                                    </item>
+                                                </item>
+                                                <item name="shippingAddress" xsi:type="array">
+                                                    <item name="children" xsi:type="array">
+                                                        <item name="shippingAdditional" xsi:type="array">
+                                                            <item name="component" xsi:type="string">uiComponent</item>
+                                                            <item name="displayArea" xsi:type="string">shippingAdditional</item>
+                                                            <item name="children" xsi:type="array">
+                                                                <item name="shipping-option-wrapper" xsi:type="array">
+                                                                    <item name="component" xsi:type="string">Gento_Oca/js/view/branch-selector</item>
+                                                                    <item name="provider" xsi:type="string">checkoutProvider</item>
                                                                 </item>
                                                             </item>
                                                         </item>

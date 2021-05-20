@@ -5,6 +5,7 @@ namespace Gento\Oca\Helper;
 use Gento\Oca\Model\Config\Source\UnitsAttribute;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Filter\FilterManager;
 use Magento\Store\Model\ScopeInterface;
 
 class Data
@@ -15,9 +16,11 @@ class Data
     protected $scopeConfig;
 
     public function __construct(
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        FilterManager $filterManager
     ) {
         $this->scopeConfig = $scopeConfig;
+        $this->filterManager = $filterManager;
     }
 
     public function getProductSize(Product $product)
@@ -51,6 +54,43 @@ class Data
         return [$width, $height, $length];
     }
 
+    /**
+     * @param $branches
+     * @return array[]
+     */
+    public function addDescriptionToBranches($branches)
+    {
+        foreach ($branches as $idx => $branch) {
+            $branches[$idx] = $this->addDescriptionToBranch($branch);
+        }
+        return $branches;
+    }
+
+    /**
+     * @param array $branch
+     * @return array
+     */
+    public function addDescriptionToBranch(array $branch)
+    {
+        $branch['branch_description'] = $this->getParsedDescription($branch);
+        return $branch;
+    }
+
+    /**
+     * @param array $branch
+     * @return string
+     */
+    protected function getParsedDescription(array $branch)
+    {
+        $template = $this->getConfigData('carriers/gento_oca/branch_description');
+
+        return $this->filterManager->template($template, ['variables' => $branch]);
+    }
+
+    /**
+     * @param $path
+     * @return mixed
+     */
     protected function getConfigData($path)
     {
         return $this->scopeConfig->getValue(
