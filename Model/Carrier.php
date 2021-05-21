@@ -183,9 +183,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $freeBoxes = 0;
         $weight = floatval($request->getPackageWeight());
 
-        // @todo Set configurable price by box
-        $price = 5; // $this->getConfigData('price')
-
         if ($request->getAllItems()) {
             foreach ($request->getAllItems() as $item) {
                 if ($item->getFreeShipping() && !$item->getProduct()->isVirtual()) {
@@ -202,9 +199,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $volume = $this->getConfigData("volume/min");
         }
 
-        $shippingPrice = ($request->getPackageQty() * $price) - ($freeBoxes * $price);
-        $shippingPrice = $this->getFinalPriceWithHandlingFee($shippingPrice);
-
         $operatory = $this->_operatoryCollectionFactory->create();
 
         $senderZipCode = $request->getPostcode();
@@ -215,19 +209,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         // @todo Create a method to calculate package qty
         $packageQty = 1;
 
-        if ($shippingPrice !== false) {
-            foreach ($operatory->getActiveList() as $operatory) {
-                $this->processOperatory(
-                    $operatory,
-                    $rateResult,
-                    $weight,
-                    $volume,
-                    $senderZipCode,
-                    $receiverZipcode,
-                    $packageValue,
-                    $packageQty
-                );
-            }
+        foreach ($operatory->getActiveList() as $operatory) {
+            $this->processOperatory(
+                $operatory,
+                $rateResult,
+                $weight,
+                $volume,
+                $senderZipCode,
+                $receiverZipcode,
+                $packageValue,
+                $packageQty,
+                $request->getPackageQty(),
+                $freeBoxes
+            );
         }
 
         return $rateResult;
@@ -241,7 +235,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $senderZipcode,
         $receiverZipcode,
         $packageValue,
-        $packageQty
+        $packageQty,
+        $itemQty,
+        $freeQty
     ) {
         $tarifa = null;
         $errorMessage = '';
@@ -270,6 +266,10 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         }
 
         $quoteValue = $tarifa->Total;
+
+        if ($itemQty <= $freeQty) {
+            $quoteValue = 0;
+        }
 
         $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
         $this->_addRate(
