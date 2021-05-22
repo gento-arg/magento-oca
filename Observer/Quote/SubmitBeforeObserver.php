@@ -4,6 +4,7 @@ namespace Gento\Oca\Observer\Quote;
 
 use Gento\Oca\Api\BranchRepositoryInterface;
 use Gento\Oca\Helper\Data;
+use Gento\Oca\Model\OcaApi;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -14,18 +15,29 @@ class SubmitBeforeObserver implements ObserverInterface
      * @var BranchRepositoryInterface
      */
     private $branchRepository;
-
     /**
      * @var Data
      */
     private $helper;
+    /**
+     * @var OcaApi
+     */
+    private $ocaApi;
 
+    /**
+     * SubmitBeforeObserver constructor.
+     * @param BranchRepositoryInterface $branchRepository
+     * @param Data $helper
+     * @param OcaApi $ocaApi
+     */
     public function __construct(
         BranchRepositoryInterface $branchRepository,
-        Data $helper
+        Data $helper,
+        OcaApi $ocaApi
     ) {
         $this->branchRepository = $branchRepository;
         $this->helper = $helper;
+        $this->ocaApi = $ocaApi;
     }
 
     /**
@@ -39,15 +51,34 @@ class SubmitBeforeObserver implements ObserverInterface
         /* @var Quote $quote */
         $quote = $observer->getEvent()->getData('quote');
 
-        $order->setData('shipping_branch', $quote->getData('shipping_branch'));
+        $branchCode = $quote->getData('shipping_branch');
+        $order->setData('shipping_branch', $branchCode);
+
+        $branchData = null;
         try {
             $branch = $this->branchRepository
-                ->getByCode($quote->getData('shipping_branch'));
+                ->getByCode($branchCode);
             $branchData = $branch->getData();
-            $branchData = $this->helper->addDescriptionToBranch($branchData);
-            $shippingDescription = $order->getShippingDescription() . PHP_EOL . $branchData['branch_description'];
-            $order->setShippingDescription($shippingDescription);
         } catch (NoSuchEntityException $e) {
+        }
+
+        if ($branchData === null) {
+            $postcode = $quote->getShippingAddress()->getPostcode();
+            $branches = $this->ocaApi->getBranchesZipCode($postcode);
+            foreach ($branches as $branch) {
+                if ($branch['code'] == $branchCode) {
+                    $branchData = $branch;
+                    break;
+                }
+            }
+        }
+
+        if ($branchData !== null) {
+            $branchData = $this->helper->addDescriptionToBranch($branchData);
+            $branchDescription = trim($branchData['branch_description']);
+
+            $shippingDescription = $order->getShippingDescription() . PHP_EOL . $branchDescription;
+            $order->setShippingDescription($shippingDescription);
         }
 
         return $this;
