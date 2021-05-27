@@ -5,17 +5,16 @@ namespace Gento\Oca\Model\Config\Source;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Eav\Api\AttributeRepositoryInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
-use Magento\Framework\Data\OptionSourceInterface;
 
-class ProductAttribute implements OptionSourceInterface
+class ProductAttribute extends AbstractSource
 {
     /**
-     * @var \Magento\Framework\Api\SearchCriteriaBuilder
+     * @var SearchCriteriaBuilder
      */
     protected $searchCriteriaBuilder;
 
     /**
-     * @var \Magento\Eav\Api\AttributeRepositoryInterface
+     * @var AttributeRepositoryInterface
      */
     protected $attributeRepository;
 
@@ -28,19 +27,7 @@ class ProductAttribute implements OptionSourceInterface
     }
 
     /**
-     * @inheritdoc
-     */
-    public function toOptionArray()
-    {
-        return array_map(function ($key, $label) {
-            return ['value' => $key, 'label' => $label];
-        }, array_keys($this->toArray()), $this->toArray());
-    }
-
-    /**
-     * Get options in "key-value" format
-     *
-     * @return array
+     * @inheridoc
      */
     public function toArray()
     {

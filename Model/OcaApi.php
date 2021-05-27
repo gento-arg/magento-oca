@@ -22,6 +22,7 @@ use Zend_Date;
 class OcaApi
 {
     const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
+    const WS_CENTROS_IMPOSICION_ADMISION = 'GetCentrosImposicionAdmision';
     const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
     const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
     const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
@@ -365,6 +366,27 @@ class OcaApi
 
         $xpath = $this->getXPath($data);
         return $xpath->query('/*')->item(0)->nodeValue;
+    }
+
+    /**
+     * @return array|array[]
+     * @throws Throwable
+     */
+    public function getBranchesWithAdmision()
+    {
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_ADMISION, [], false);
+        $centros = $this->loadDataset($data, [
+            'idCentroImposicion',
+            'Sigla',
+            'Descripcion',
+            'Calle',
+            'Numero',
+            'Piso',
+            'Localidad',
+            'CodigoPostal',
+        ]);
+
+        return $this->processBranches($centros);
     }
 
     /**

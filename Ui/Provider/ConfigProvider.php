@@ -10,6 +10,15 @@ use Magento\Framework\UrlInterface;
 class ConfigProvider implements ConfigProviderInterface
 {
     /**
+     * @var CollectionFactory
+     */
+    private $operatoryCollectionFactory;
+    /**
+     * @var UrlInterface
+     */
+    private $urlBuilder;
+
+    /**
      * ConfigProvider constructor.
      * @param CollectionFactory $operatoryCollectionFactory
      * @param UrlInterface $urlBuilder
@@ -18,15 +27,15 @@ class ConfigProvider implements ConfigProviderInterface
         CollectionFactory $operatoryCollectionFactory,
         UrlInterface $urlBuilder
     ) {
-        $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
+        $this->operatoryCollectionFactory = $operatoryCollectionFactory;
         $this->urlBuilder = $urlBuilder;
     }
 
     public function getConfig()
     {
         $withBranches = [];
-        $operatory = $this->_operatoryCollectionFactory->create();
-        foreach ($operatory->getUsesIdci()->getActiveList() as /** @var OperatoryInterface */ $operatory) {
+        $operatory = $this->operatoryCollectionFactory->create();
+        foreach ($operatory->getDeliveryToBranch()->getActiveList() as /** @var OperatoryInterface */ $operatory) {
             $withBranches[] = $operatory->getCode();
         }
 

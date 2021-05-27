@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
             <item name="provider" xsi:type="string">gento_oca_operatory_form.operatory_form_data_source</item>
@@ -37,7 +38,7 @@
             </settings>
         </dataProvider>
     </dataSource>
-    <fieldset name="general">
+    <fieldset name="general" component="Gento_Oca/js/form/components/operatory/fieldset">
         <settings>
             <label translate="true">Operatory Information</label>
         </settings>
@@ -110,27 +111,45 @@
             </formElements>
         </field>
 
-        <field name="uses_idci" formElement="checkbox">
+        <field name="operatory_type" formElement="select">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
-                    <item name="source" xsi:type="string">operatory</item>
+                    <item name="source" xsi:type="string">operatory_type</item>
+                    <item name="exports" xsi:type="array">
+                        <item name="value" xsi:type="string">${$.parentName}:operatoryType</item>
+                    </item>
                 </item>
             </argument>
             <settings>
-                <dataType>text</dataType>
-                <label translate="true">Uses branches</label>
-                <dataScope>uses_idci</dataScope>
+                <label translate="true">Type</label>
             </settings>
             <formElements>
-                <checkbox>
+                <select>
                     <settings>
-                        <valueMap>
-                            <map name="false" xsi:type="number">0</map>
-                            <map name="true" xsi:type="number">1</map>
-                        </valueMap>
-                        <prefer>toggle</prefer>
+                        <options class="Gento\Oca\Model\Config\Source\OperatoryTypes"/>
                     </settings>
-                </checkbox>
+                </select>
+            </formElements>
+        </field>
+
+        <field name="origin_branch_id" formElement="select">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">origin_branch_id</item>
+                    <item name="imports" xsi:type="array">
+                        <item name="visible" xsi:type="string">${$.parentName}:hasOriginBranch</item>
+                    </item>
+                </item>
+            </argument>
+            <settings>
+                <label translate="true">Origin branch</label>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Gento\Oca\Model\Config\Source\AdmisionBranches"/>
+                    </settings>
+                </select>
             </formElements>
         </field>
 

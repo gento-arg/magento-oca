@@ -3,9 +3,8 @@
 namespace Gento\Oca\Model\Config\Source;
 
 use Gento\Oca\Api\HistoryRepositoryInterface;
-use Magento\Framework\Data\OptionSourceInterface;
 
-class HistoryStatus implements OptionSourceInterface
+class HistoryStatus extends AbstractSource
 {
     /**
      * @var HistoryRepositoryInterface
@@ -23,19 +22,7 @@ class HistoryStatus implements OptionSourceInterface
     }
 
     /**
-     * @inheritdoc
-     */
-    public function toOptionArray()
-    {
-        return array_map(function ($key, $label) {
-            return ['value' => $key, 'label' => $label];
-        }, array_keys($this->toArray()), $this->toArray());
-    }
-
-    /**
-     * Get options in "key-value" format
-     *
-     * @return array
+     * @inheridoc
      */
     public function toArray(): array
     {

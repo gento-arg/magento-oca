@@ -2,24 +2,12 @@
 
 namespace Gento\Oca\Model\ResourceModel\Operatory;
 
+use Gento\Oca\Model\Config\Source\OperatoryTypes;
 use Gento\Oca\Model\Operatory;
 use Gento\Oca\Model\ResourceModel\AbstractCollection;
 
 class Collection extends AbstractCollection
 {
-    /**
-     * Define resource model
-     *
-     * @return void
-     */
-    protected function _construct()
-    {
-        $this->_init(
-            Operatory::class,
-            \Gento\Oca\Model\ResourceModel\Operatory::class
-        );
-    }
-
     /**
      * @return Collection
      */
@@ -31,8 +19,24 @@ class Collection extends AbstractCollection
     /**
      * @return Collection
      */
-    public function getUsesIdci()
+    public function getDeliveryToBranch()
     {
-        return $this->addFieldToFilter('uses_idci', ['eq' => true]);
+        return $this->addFieldToFilter('operatory_type', ['in' => [
+            OperatoryTypes::TYPE_BRANCH2BRANCH,
+            OperatoryTypes::TYPE_DOOR2BRANCH,
+        ]]);
+    }
+
+    /**
+     * Define resource model
+     *
+     * @return void
+     */
+    protected function _construct()
+    {
+        $this->_init(
+            Operatory::class,
+            \Gento\Oca\Model\ResourceModel\Operatory::class
+        );
     }
 }

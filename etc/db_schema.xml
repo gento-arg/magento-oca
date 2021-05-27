@@ -15,6 +15,10 @@
                 comment="Operatory Created at"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
                 comment="Operatory Updated At"/>
+        <column xsi:type="varchar" name="operatory_type" nullable="true"
+                comment="Operatory type"/>
+        <column xsi:type="smallint" name="origin_branch_id" padding="2" nullable="true"
+                comment="Origin branch"/>
         <index referenceId="GENTO_OCA_OPERATORY_FULLTEXT" indexType="fulltext">
             <column name="name"/>
             <column name="code"/>
