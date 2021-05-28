@@ -1,4 +1,5 @@
 <?php
+
 namespace Gento\Oca\Model;
 
 use Gento\Oca\Api\Data\OperatoryInterface;
@@ -33,15 +34,6 @@ class Operatory extends AbstractModel implements OperatoryInterface
      * @var string
      */
     protected $_eventObject = 'operatory';
-    /**
-     * Initialize resource model
-     *
-     * @return void
-     */
-    protected function _construct()
-    {
-        $this->_init(OperatoryResourceModel::class);
-    }
 
     /**
      * Get identities
@@ -66,7 +58,7 @@ class Operatory extends AbstractModel implements OperatoryInterface
     /**
      * set Operatory id
      *
-     * @param  int $operatoryId
+     * @param int $operatoryId
      * @return OperatoryInterface
      */
     public function setOperatoryId($operatoryId)
@@ -157,5 +149,48 @@ class Operatory extends AbstractModel implements OperatoryInterface
     public function getPaysOnDestination()
     {
         return $this->getData(OperatoryInterface::PAYS_ON_DESTINATION);
+    }
+
+    /**
+     * @param string $type
+     * @return OperatoryInterface
+     */
+    public function setOperatoryType($type)
+    {
+        return $this->setData(OperatoryInterface::TYPE, $type);
+    }
+
+    /**
+     * @return string
+     */
+    public function getOperatoryType()
+    {
+        return $this->getData(OperatoryInterface::TYPE);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setOriginBranchId($branchId)
+    {
+        return $this->setData(OperatoryInterface::ORIGIN_BRANCH_ID, $branchId);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getOriginBranchId()
+    {
+        return $this->getData(OperatoryInterface::ORIGIN_BRANCH_ID);
+    }
+
+    /**
+     * Initialize resource model
+     *
+     * @return void
+     */
+    protected function _construct()
+    {
+        $this->_init(OperatoryResourceModel::class);
     }
 }

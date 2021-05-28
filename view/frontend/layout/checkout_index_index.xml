@@ -30,7 +30,8 @@
                                                             <item name="component" xsi:type="string">uiComponent</item>
                                                             <item name="displayArea" xsi:type="string">shippingAdditional</item>
                                                             <item name="children" xsi:type="array">
-                                                                <item name="shipping-option-wrapper" xsi:type="array">
+                                                                <item name="shipping-oca-branch-selector-wrapper"
+                                                                      xsi:type="array">
                                                                     <item name="component" xsi:type="string">Gento_Oca/js/view/branch-selector</item>
                                                                     <item name="provider" xsi:type="string">checkoutProvider</item>
                                                                 </item>

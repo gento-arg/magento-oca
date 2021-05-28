@@ -4,12 +4,16 @@ define([
     'ko',
     'Magento_Checkout/js/model/quote',
     'Gento_Oca/js/service/branch',
+    'Gento_Oca/js/oca-data',
     'mage/translate'
-], function ($,
-             Component,
-             ko,
-             quote,
-             serviceBranch) {
+], function (
+    $,
+    Component,
+    ko,
+    quote,
+    serviceBranch,
+    ocaData
+) {
     'use strict';
 
     var useIdci = window.checkoutConfig.oca.useBranches;
@@ -26,6 +30,7 @@ define([
         hasWarning: ko.observable(true),
         initObservable: function () {
             this._super();
+
             quote.shippingAddress.subscribe(() => {
                 this.loadBranches(quote.shippingAddress().postcode)
             });
@@ -55,6 +60,7 @@ define([
                 shippingAddress['extension_attributes']['gento_oca_branch'] = ocaBranch;
                 shippingAddress['extension_attributes']['gento_oca_branch_description'] = description;
                 quote.shippingAddress(shippingAddress)
+                ocaData.setSelectedOcaBranch(ocaBranch);
             })
             return this;
         },
@@ -97,6 +103,15 @@ define([
                         return 0;
                     });
                     this.branchList(this.branchesCache[postcode]);
+                    let ocaBranch = ocaData.getSelectedOcaBranch();
+                    let selectedBranch = null;
+                    if (this.branchList().length == 1) {
+                        selectedBranch = this.branchList()[0]
+                    }
+                    if (selectedBranch == null) {
+                        selectedBranch = this.branchList().find(e => e.code == ocaBranch);
+                    }
+                    this.selectedBranch(selectedBranch)
                 })
         },
 

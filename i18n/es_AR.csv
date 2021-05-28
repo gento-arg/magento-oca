@@ -48,3 +48,7 @@ Volume,Volúmen
 "Are you sure you wan't to delete selected Operatories?","¿Está seguro de borrar las operatorias seleccionadas?"
 "-- Select a branch --", "-- Seleccionar una sucursal --"
 "The branch is required", "La sucursal es requerida"
+"Branch to door","Sucursal a puerta"
+"Branch to branch","Sucursal a sucursal"
+"Door to door","Puerta a puerta"
+"Door to branch","Puerta a sucursal"
