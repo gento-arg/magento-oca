@@ -27,6 +27,11 @@ class Collection extends AbstractCollection
         ]]);
     }
 
+    public function getFilterByCode($operatoryCode)
+    {
+        return $this->addFieldToFilter('code', ['eq' => $operatoryCode]);
+    }
+
     /**
      * Define resource model
      *

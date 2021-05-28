@@ -77,9 +77,11 @@
         </constraint>
     </table>
     <table name="quote">
+        <column name="shipping_origin_branch" xsi:type="varchar" nullable="true"/>
         <column name="shipping_branch" xsi:type="varchar" nullable="true"/>
     </table>
     <table name="sales_order">
+        <column name="shipping_origin_branch" xsi:type="varchar" nullable="true"/>
         <column name="shipping_branch" xsi:type="varchar" nullable="true"/>
     </table>
 </schema>

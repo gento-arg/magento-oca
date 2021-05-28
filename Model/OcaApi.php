@@ -225,7 +225,7 @@ class OcaApi
      */
     public function requestShipment(DataObject $request)
     {
-        $operativa = $request->getOperativa();
+        //$operativa = $request->getOperativa();
         //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
         //$centroCosto = $centros[0]['NroCentroCosto'];
         //
@@ -481,7 +481,6 @@ class OcaApi
                     '@observaciones' => '',
                     '@centrocosto' => $request->getCentroCosto(),
                     '@idfranjahoraria' => $request->getFranjaHoraria(),
-                    '@idfranjahoraria' => '3',
                     '@idcentroimposicionorigen' => $request->getCentroImposicionOrigen(),
                     '@fecha' => $date->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
                     'envios' => [
