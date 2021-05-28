@@ -22,6 +22,7 @@ use Zend_Date;
 class OcaApi
 {
     const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
+    const WS_CENTROS_IMPOSICION_ADMISION = 'GetCentrosImposicionAdmision';
     const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
     const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
     const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
@@ -224,7 +225,7 @@ class OcaApi
      */
     public function requestShipment(DataObject $request)
     {
-        $operativa = $request->getOperativa();
+        //$operativa = $request->getOperativa();
         //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
         //$centroCosto = $centros[0]['NroCentroCosto'];
         //
@@ -368,6 +369,27 @@ class OcaApi
     }
 
     /**
+     * @return array|array[]
+     * @throws Throwable
+     */
+    public function getBranchesWithAdmision()
+    {
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_ADMISION, [], false);
+        $centros = $this->loadDataset($data, [
+            'idCentroImposicion',
+            'Sigla',
+            'Descripcion',
+            'Calle',
+            'Numero',
+            'Piso',
+            'Localidad',
+            'CodigoPostal',
+        ]);
+
+        return $this->processBranches($centros);
+    }
+
+    /**
      * @param $cuit
      * @return false|string
      */
@@ -459,7 +481,6 @@ class OcaApi
                     '@observaciones' => '',
                     '@centrocosto' => $request->getCentroCosto(),
                     '@idfranjahoraria' => $request->getFranjaHoraria(),
-                    '@idfranjahoraria' => '3',
                     '@idcentroimposicionorigen' => $request->getCentroImposicionOrigen(),
                     '@fecha' => $date->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
                     'envios' => [

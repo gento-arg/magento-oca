@@ -6,6 +6,9 @@
             <field name="shipping_branch">
                 <aspect name="to_order" />
             </field>
+            <field name="shipping_origin_branch">
+                <aspect name="to_order" />
+            </field>
         </fieldset>
     </scope>
 </config>

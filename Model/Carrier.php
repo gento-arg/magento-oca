@@ -425,8 +425,13 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $request->setOperativa($operativa);
             $request->setCentroImposicion($centroImposicion);
 
-            // TODO Must be complete with BranchToBranch an BranchToDoor
-            $request->setCentroImposicionOrigen('0');
+            $orderShipment = $request->getOrderShipment();
+            $order = $orderShipment->getOrder();
+            $originBranch = '0';
+            if ($order->getShippingOriginBranch()) {
+                $originBranch = $order->getShippingOriginBranch();
+            }
+            $request->setCentroImposicionOrigen($originBranch);
 
             $admision = $this->ocaApi->requestShipment($request);
 

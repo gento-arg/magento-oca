@@ -53,6 +53,8 @@ class SubmitBeforeObserver implements ObserverInterface
 
         $branchCode = $quote->getData('shipping_branch');
         $order->setData('shipping_branch', $branchCode);
+        $originBranchCode = $quote->getData('shipping_origin_branch');
+        $order->setData('shipping_origin_branch', $originBranchCode);
 
         $branchData = null;
         try {

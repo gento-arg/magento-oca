@@ -58,6 +58,7 @@ class OrderRepositoryPlugin
         $extensionAttributes = $order->getExtensionAttributes() ?: $this->extensionFactory->create();
 
         $extensionAttributes->setShippingBranch($order->getData('shipping_branch'));
+        $extensionAttributes->setShippingOriginBranch($order->getData('shipping_origin_branch'));
         $order->setExtensionAttributes($extensionAttributes);
 
         return $order;

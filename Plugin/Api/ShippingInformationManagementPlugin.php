@@ -2,6 +2,7 @@
 
 namespace Gento\Oca\Plugin\Api;
 
+use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
 use Magento\Checkout\Api\Data\ShippingInformationInterface;
 use Magento\Checkout\Model\ShippingInformationManagement;
 use Magento\Quote\Model\QuoteRepository;
@@ -12,14 +13,21 @@ class ShippingInformationManagementPlugin
      * @var QuoteRepository
      */
     protected $quoteRepository;
+    /**
+     * @var CollectionFactory
+     */
+    private $operatoryCollectionFactory;
 
     /**
      * @param QuoteRepository $quoteRepository
+     * @param CollectionFactory $operatoryCollectionFactory
      */
     public function __construct(
-        QuoteRepository $quoteRepository
+        QuoteRepository $quoteRepository,
+        CollectionFactory $operatoryCollectionFactory
     ) {
         $this->quoteRepository = $quoteRepository;
+        $this->operatoryCollectionFactory = $operatoryCollectionFactory;
     }
 
     /**
@@ -38,6 +46,16 @@ class ShippingInformationManagementPlugin
         $quote = $this->quoteRepository->getActive($cartId);
 
         $quote->setShippingBranch($ocaBranch);
+        $originBranch = null;
+        $operatory = $this->operatoryCollectionFactory->create()
+            ->getActiveList()
+            ->getFilterByCode($addressInformation->getShippingMethodCode())
+            ->getFirstItem();
+
+        if ($operatory->getId() > 0) {
+            $originBranch = $operatory->getOriginBranchId();
+        }
+        $quote->setShippingOriginBranch($originBranch);
         $this->quoteRepository->save($quote);;
     }
 }
