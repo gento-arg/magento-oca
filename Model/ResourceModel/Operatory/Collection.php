@@ -13,7 +13,8 @@ class Collection extends AbstractCollection
      */
     public function getActiveList()
     {
-        return $this->addFieldToFilter('active', ['eq' => true]);
+        return $this->addFieldToFilter('active', ['eq' => true])
+            ->setOrder('position', 'ASC');
     }
 
     /**

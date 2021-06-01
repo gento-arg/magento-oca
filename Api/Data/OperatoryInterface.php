@@ -14,6 +14,7 @@ interface OperatoryInterface
     const ORIGIN_BRANCH_ID = 'origin_branch_id';
     const PAYS_ON_DESTINATION = 'pays_on_destination';
     const TYPE = 'operatory_type';
+    const POSITION = 'position';
     const USES_IDCI = 'uses_idci';
 
     /**
@@ -114,5 +115,16 @@ interface OperatoryInterface
      * @return int
      */
     public function getOriginBranchId();
+
+    /**
+     * @param int $position
+     * @return OperatoryInterface
+     */
+    public function setPosition($position);
+
+    /**
+     * @return int
+     */
+    public function getPosition();
 
 }

@@ -185,6 +185,22 @@ class Operatory extends AbstractModel implements OperatoryInterface
     }
 
     /**
+     * @inheritDoc
+     */
+    public function setPosition($position)
+    {
+        return $this->setData(OperatoryInterface::POSITION, $position);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getPosition()
+    {
+        return $this->getData(OperatoryInterface::POSITION);
+    }
+
+    /**
      * Initialize resource model
      *
      * @return void
