@@ -1,6 +1,6 @@
 <?php
 
-namespace Gento\Oca\Observer\Quote;
+namespace Gento\Oca\Observer;
 
 use Gento\Oca\Api\BranchRepositoryInterface;
 use Gento\Oca\Helper\Data;
@@ -9,7 +9,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
-class SubmitBeforeObserver implements ObserverInterface
+class PlaceOrderBeforeObserver implements ObserverInterface
 {
     /**
      * @var BranchRepositoryInterface
@@ -79,7 +79,7 @@ class SubmitBeforeObserver implements ObserverInterface
             $postcode = $quote->getShippingAddress()->getPostcode();
             $branches = $this->ocaApi->getBranchesZipCode($postcode);
             foreach ($branches as $branch) {
-                if ($branch['code'] == $branchCode) {
+                if ($branch['code'] == $shippingBranch) {
                     $branchData = $branch;
                     break;
                 }
