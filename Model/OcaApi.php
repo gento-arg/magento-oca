@@ -21,9 +21,11 @@ use Zend_Date;
 
 class OcaApi
 {
+    const SERVICIO_ADMISION = 1;
+    const SERVICIO_ENTREGA = 2;
     const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
-    const WS_CENTROS_IMPOSICION_ADMISION = 'GetCentrosImposicionAdmision';
-    const WS_CENTROS_IMPOSICION_CP = 'GetCentrosImposicionPorCP';
+    const WS_CENTROS_IMPOSICION_SERVICIOS = 'GetCentrosImposicionConServicios';
+    const WS_CENTROS_IMPOSICION_SERVICIOS_CP = 'GetCentrosImposicionConServiciosByCP';
     const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
     const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
     const WS_MULTI_INGRESO_OR = 'IngresoORMultiplesRetiros';
@@ -120,35 +122,63 @@ class OcaApi
     }
 
     /**
-     * @param $zipcode
      * @return array|array[]
      */
-    public function getBranchesZipCode($zipcode)
+    public function getBranchesWithService()
     {
-        if (!$zipcode) {
-            return [];
-        }
-        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_CP, [
-            'CodigoPostal' => $zipcode
-        ], false);
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_SERVICIOS);
         $centros = $this->loadDataset($data, [
-            'idCentroImposicion',
-            'IdSucursalOCA',
+            'idCentroImposicion' => 'IdCentroImposicion',
             'Sigla',
-            'Descripcion',
+            'Sucursal',
             'Calle',
             'Numero',
             'Torre',
             'Piso',
             'Depto',
             'Localidad',
-            'IdProvincia',
-            'idCodigoPostal',
-            'Telefono',
-            'eMail',
-            'Provincia',
             'CodigoPostal',
+            'Provincia',
+            'Telefono',
+            'Latitud',
+            'Longitud',
+            'IdSucursalOCA' => 'SucursalOCA',
+            'Servicios'
+        ], '//CentrosDeImposicion/Centro');
+
+        return $this->processBranches($centros);
+    }
+
+    /**
+     * @param $zipcode
+     * @return array|array[]
+     */
+    public function getBranchesWithServiceZipCode($zipcode)
+    {
+        if (!$zipcode) {
+            return [];
+        }
+        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_SERVICIOS_CP, [
+            'CodigoPostal' => $zipcode
         ]);
+        $centros = $this->loadDataset($data, [
+            'idCentroImposicion' => 'IdCentroImposicion',
+            'Sigla',
+            'Sucursal',
+            'Calle',
+            'Numero',
+            'Torre',
+            'Piso',
+            'Depto',
+            'Localidad',
+            'CodigoPostal',
+            'Provincia',
+            'Telefono',
+            'Latitud',
+            'Longitud',
+            'IdSucursalOCA' => 'SucursalOCA',
+            'Servicios'
+        ], '//CentrosDeImposicion/Centro');
 
         return $this->processBranches($centros);
     }
@@ -372,21 +402,28 @@ class OcaApi
      * @return array|array[]
      * @throws Throwable
      */
-    public function getBranchesWithAdmision()
+    public function getAdmisionBranches()
     {
-        $data = $this->callPost(self::WS_CENTROS_IMPOSICION_ADMISION, [], false);
-        $centros = $this->loadDataset($data, [
-            'idCentroImposicion',
-            'Sigla',
-            'Descripcion',
-            'Calle',
-            'Numero',
-            'Piso',
-            'Localidad',
-            'CodigoPostal',
-        ]);
+        $branches = [];
+        foreach ($this->getBranchesWithService() as $branch) {
+            if (in_array(self::SERVICIO_ADMISION, $branch['servicios'])) {
+                $branches[] = $branch;
+            }
+        }
 
-        return $this->processBranches($centros);
+        return $branches;
+    }
+
+    public function getDeliveryBranchesZipCode($zipCode)
+    {
+        $branches = [];
+        foreach ($this->getBranchesWithServiceZipCode($zipCode) as $branch) {
+            if (in_array(self::SERVICIO_ENTREGA, $branch['servicios'])) {
+                $branches[] = $branch;
+            }
+        }
+
+        return $branches;
     }
 
     /**
@@ -410,17 +447,24 @@ class OcaApi
     {
         array_walk($centros, function ($item, $key) use (&$centros) {
             foreach ($item as $k => $v) {
-                $item[$k] = trim($v);
+                $item[$k] = $v;
+                if (is_string($v))
+                    $item[$k] = trim($v);
             }
             $centros[$key] = $item;
         });
 
         return array_map(function ($row) {
+            $servicios = [];
+            if (isset($row['Servicios']) && isset($row['Servicios']['Servicio'])) {
+                foreach ($row['Servicios']['Servicio'] as $servicio) {
+                    $servicios[] = $servicio['IdTipoServicio'];
+                }
+            }
+
             return [
                 'code' => $row['idCentroImposicion'],
                 'short_name' => $row['Sigla'] ?? '',
-                'name' => $row['Descripcion'] ?? '',
-                'description' => $row['Descripcion'] ?? '',
                 'address_street' => $row['Calle'] ?? '',
                 'address_number' => $row['Numero'] ?? '',
                 'address_floor' => $row['Piso'] ?? '',
@@ -430,6 +474,7 @@ class OcaApi
                 'email' => $row['eMail'] ?? '',
                 'city' => $row['Localidad'] ?? '',
                 'zipcode' => $row['CodigoPostal'],
+                'servicios' => $servicios,
                 'active' => true,
             ];
         }, $centros);
@@ -546,9 +591,9 @@ class OcaApi
      * @param $fields
      * @return array
      */
-    protected function loadDataset($xmlObject, $fields)
+    protected function loadDataset($xmlObject, $fields, $path = '//NewDataSet/Table')
     {
-        $table = $this->loadPaths($xmlObject, ['table' => '//NewDataSet/Table']);
+        $table = $this->loadPaths($xmlObject, ['table' => $path]);
         if (!isset($table['table'])) {
             return [];
         }
@@ -613,7 +658,13 @@ class OcaApi
 
             $item = $ci->getElementsByTagName($field)->item(0);
             if ($item != null) {
-                $value = $item->nodeValue;
+                // En caso de que sea un array de elementos (como puede ser Servicios)
+                if ($item->firstChild->nodeType === XML_ELEMENT_NODE) {
+                    $value = $this->childToArray($item->childNodes);
+                }
+                if ($item->firstChild->nodeType === XML_TEXT_NODE) {
+                    $value = $item->nodeValue;
+                }
             }
 
             $return[$alias] = $value;
@@ -708,5 +759,21 @@ class OcaApi
         $dom = new DOMDocument();
         $dom->loadXML($xmlString, ~LIBXML_DTDVALID);
         return new DOMXpath($dom);
+    }
+
+    protected function childToArray(\DOMNodeList $nodes)
+    {
+        $value = [];
+        foreach ($nodes as $childNode) {
+            if ($childNode->firstChild->nodeType === XML_ELEMENT_NODE) {
+                $value[$childNode->nodeName][] = $this->childToArray($childNode->childNodes);
+            }
+
+            if ($childNode->firstChild->nodeType === XML_TEXT_NODE) {
+                $value[$childNode->nodeName] = $childNode->nodeValue;
+            }
+        }
+
+        return $value;
     }
 }

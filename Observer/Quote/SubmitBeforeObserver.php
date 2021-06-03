@@ -66,7 +66,7 @@ class SubmitBeforeObserver implements ObserverInterface
 
         if ($branchData === null) {
             $postcode = $quote->getShippingAddress()->getPostcode();
-            $branches = $this->ocaApi->getBranchesZipCode($postcode);
+            $branches = $this->ocaApi->getBranchesWithServiceZipCode($postcode);
             foreach ($branches as $branch) {
                 if ($branch['code'] == $branchCode) {
                     $branchData = $branch;

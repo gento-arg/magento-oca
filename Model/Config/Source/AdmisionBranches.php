@@ -36,12 +36,13 @@ class AdmisionBranches extends AbstractSource
      */
     public function toArray(): array
     {
-        $branches = $this->ocaApi->getBranchesWithAdmision();
+        $branches = $this->ocaApi->getAdmisionBranches();
         $branches = $this->helper->addDescriptionToBranches($branches);
-
-        return array_reduce($branches, function ($result, $branch) {
+        $branches = array_reduce($branches, function ($result, $branch) {
             $result[$branch['code']] = $branch['branch_description'];
             return $result;
         }, []);
+        asort($branches);
+        return $branches;
     }
 }

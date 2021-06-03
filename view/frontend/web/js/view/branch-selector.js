@@ -120,7 +120,7 @@ define([
         },
 
         itemLabel: function (item) {
-            return `${item.zipcode} - ${item.name}`;
+            return `${item.zipcode} - ${item.branch_description}`;
         },
 
         selectedBranchAddress: function () {

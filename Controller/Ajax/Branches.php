@@ -4,15 +4,15 @@ namespace Gento\Oca\Controller\Ajax;
 
 use Gento\Oca\Helper\Data;
 use Gento\Oca\Model\OcaApi;
-use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 
 /**
  * Catalog index page controller.
  */
-class Branches extends Action implements HttpPostActionInterface
+class Branches implements HttpPostActionInterface
 {
     /**
      * @var JsonFactory
@@ -28,6 +28,10 @@ class Branches extends Action implements HttpPostActionInterface
      * @var Data
      */
     protected $helper;
+    /**
+     * @var RequestInterface
+     */
+    protected $request;
 
     /**
      * Branches constructor.
@@ -45,15 +49,15 @@ class Branches extends Action implements HttpPostActionInterface
         $this->resultJsonFactory = $resultJsonFactory;
         $this->ocaApi = $ocaApi;
         $this->helper = $helper;
-        parent::__construct($context);
+        $this->request = $context->getRequest();
     }
 
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
 
-        $zipcode = $this->getRequest()->getParam('zipcode');
-        $branches = $this->ocaApi->getBranchesZipCode($zipcode);
+        $zipcode = $this->request->getParam('zipcode');
+        $branches = $this->ocaApi->getDeliveryBranchesZipCode($zipcode);
         $branches = $this->helper->addDescriptionToBranches($branches);
 
         return $result->setData($branches);
