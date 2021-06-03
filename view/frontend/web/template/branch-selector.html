@@ -17,8 +17,8 @@
                 <!-- ko if: selectedBranch -->
                 <div data-bind="visible: selectedBranch">
                     <dl>
-                        <dt data-bind="i18n: 'Description'"></dt>
-                        <dd data-bind="text: selectedBranch().description"></dd>
+                        <dt data-bind="i18n: 'City'"></dt>
+                        <dd data-bind="text: selectedBranch().city"></dd>
                         <dt data-bind="i18n: 'Address'"></dt>
                         <dd data-bind="text: selectedBranchAddress()"></dd>
                         <!-- ko if: selectedBranch().address_floor -->

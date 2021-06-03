@@ -11,7 +11,7 @@
                 <service_url>http://webservice.oca.com.ar/oep_tracking_test/Oep_Track.asmx</service_url>
                 <elocker_service_url>http://webservice.oca.com.ar/epak_tracking_test/Oep_TrackEPak.asmx</elocker_service_url>
                 <tracking_url>https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</tracking_url>
-                <branch_description><![CDATA[{{var description}}
+                <branch_description><![CDATA[{{var city}}
 {{var address_street}} {{var address_number}}
 {{if address_floor}}Piso: {{var address_floor}}
 {{/if}}{{if address_dpt}}Departamento: {{var address_dpt}}
