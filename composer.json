@@ -16,10 +16,10 @@
     ],
     "autoload": {
         "files": [
-            "registration.php"
+            "src/registration.php"
         ],
         "psr-4": {
-            "Gento\\Oca\\": ""
+            "Gento\\Oca\\": "src/"
         }
     },
     "config": {
