@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="oca_operatories" resource="default" engine="innodb" comment="Operatory Table">
+        <column xsi:type="smallint" name="operatory_id" padding="6" unsigned="false" nullable="false" identity="true"
+                comment="Operatory ID"/>
+        <column xsi:type="varchar" name="name" length="255" nullable="false" comment="Operatory Name"/>
+        <column xsi:type="varchar" name="code" length="255" nullable="false" comment="Operatory Code"/>
+        <column xsi:type="smallint" name="active" padding="2" nullable="true" comment="Operatory Active"/>
+        <column xsi:type="smallint" name="uses_idci" padding="2" nullable="true"
+                comment="Operatory Uses id centro imposicion"/>
+        <column xsi:type="smallint" name="pays_on_destination" padding="2" nullable="true"
+                comment="Operatory Pays on destination branch"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Operatory Created at"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Operatory Updated At"/>
+        <column xsi:type="varchar" name="operatory_type" nullable="true"
+                comment="Operatory type"/>
+        <column xsi:type="smallint" name="origin_branch_id" padding="2" nullable="true"
+                comment="Origin branch"/>
+        <column xsi:type="smallint" name="position" padding="6" unsigned="true" comment="Position"/>
+        <index referenceId="GENTO_OCA_OPERATORY_FULLTEXT" indexType="fulltext">
+            <column name="name"/>
+            <column name="code"/>
+        </index>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="operatory_id"/>
+        </constraint>
+    </table>
+    <table name="oca_branches" resource="default" engine="innodb" comment="Branch Table">
+        <column xsi:type="smallint" name="branch_id" padding="6" unsigned="false" nullable="false" identity="true"
+                comment="Branch ID"/>
+        <column xsi:type="varchar" name="code" length="255" nullable="false" comment="Branch Code"/>
+        <column xsi:type="varchar" name="short_name" length="255" nullable="false" comment="Branch Short name"/>
+        <column xsi:type="varchar" name="name" length="255" nullable="false" comment="Branch Name"/>
+        <column xsi:type="varchar" name="description" length="255" nullable="true" comment="Branch Description"/>
+        <column xsi:type="varchar" name="address_street" length="255" nullable="true" comment="Branch Address street"/>
+        <column xsi:type="varchar" name="address_number" length="255" nullable="true" comment="Branch Address number"/>
+        <column xsi:type="varchar" name="address_floor" length="255" nullable="true" comment="Branch Address floor"/>
+        <column xsi:type="varchar" name="city" length="255" nullable="true" comment="Branch City"/>
+        <column xsi:type="varchar" name="zipcode" length="255" nullable="false" comment="Branch Zipcode"/>
+        <column xsi:type="smallint" name="active" padding="2" nullable="true" comment="Branch Active"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Branch Created at"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Branch Updated At"/>
+        <index referenceId="GENTO_OCA_BRANCH_FULLTEXT" indexType="fulltext">
+            <column name="code"/>
+            <column name="short_name"/>
+            <column name="name"/>
+            <column name="description"/>
+            <column name="address_street"/>
+            <column name="address_number"/>
+            <column name="address_floor"/>
+            <column name="city"/>
+            <column name="zipcode"/>
+        </index>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="branch_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="UK_CODE">
+            <column name="code"/>
+        </constraint>
+    </table>
+    <table name="oca_webservice_requests" resource="default" engine="innodb" comment="Webservices Requests Table">
+        <column xsi:type="smallint" name="request_id" padding="6" unsigned="false" nullable="false" identity="true"
+                comment="Request ID"/>
+        <column xsi:type="varchar" name="status" nullable="false" comment="Status"/>
+        <column xsi:type="text" name="request_url" nullable="false" comment="Endpoint URL"/>
+        <column xsi:type="text" name="request_data" nullable="true" comment="Request data"/>
+        <column xsi:type="text" name="response_data" nullable="false" comment="Response data"/>
+        <column xsi:type="varchar" name="service" nullable="false" comment="Service called"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Request Called at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="request_id"/>
+        </constraint>
+    </table>
+    <table name="quote">
+        <column name="shipping_origin_branch" xsi:type="varchar" nullable="true"/>
+        <column name="shipping_branch" xsi:type="varchar" nullable="true"/>
+    </table>
+    <table name="sales_order">
+        <column name="shipping_origin_branch" xsi:type="varchar" nullable="true"/>
+        <column name="shipping_branch" xsi:type="varchar" nullable="true"/>
+    </table>
+</schema>
