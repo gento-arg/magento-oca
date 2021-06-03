@@ -115,8 +115,6 @@
         <plugin name="gento_oca_set_branch_description_plugin_magento_sales_orderRepository"
                 type="Gento\Oca\Plugin\Magento\Sales\OrderRepositoryPlugin"/>
     </type>
-    <type name="Magento\Shipping\Model\Rate\Result">
-        <plugin name="gento_oca_rate_set_order"
-                type="Gento\Oca\Plugin\Shipping\Rate\ResultPlugin"/>
-    </type>
+    <preference for="Magento\Shipping\Model\Rate\CarrierResult"
+                type="Gento\Oca\Model\Magento\Shipping\Rate\CarrierResult"/>
 </config>
