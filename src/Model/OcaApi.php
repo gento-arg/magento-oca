@@ -662,10 +662,10 @@ class OcaApi
             $item = $ci->getElementsByTagName($field)->item(0);
             if ($item != null) {
                 // En caso de que sea un array de elementos (como puede ser Servicios)
-                if ($item->firstChild->nodeType === XML_ELEMENT_NODE) {
+                if ($item->firstChild != null && $item->firstChild->nodeType === XML_ELEMENT_NODE) {
                     $value = $this->childToArray($item->childNodes);
                 }
-                if ($item->firstChild->nodeType === XML_TEXT_NODE) {
+                if ($item->firstChild == null || $item->firstChild->nodeType === XML_TEXT_NODE) {
                     $value = $item->nodeValue;
                 }
             }
