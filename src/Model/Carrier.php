@@ -256,12 +256,14 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         }
 
         if ($tarifa == null) {
-            $error = $this->_rateErrorFactory->create();
-            $error->setCarrier($this->_code);
-            $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
-            $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
-            $error->setErrorMessage($errorMessage);
-            $rateResult->append($error);
+            if ($this->getConfigData('showmethod')) {
+                $error = $this->_rateErrorFactory->create();
+                $error->setCarrier($this->_code);
+                $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
+                $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
+                $error->setErrorMessage($errorMessage);
+                $rateResult->append($error);
+            }
             return $rateResult;
         }
 
