@@ -77,17 +77,15 @@ contratos y estimar los costos de envío. A continuación se explican los difere
 - **Tracking URL:** Ésta URL será a la que se le concatenará el número de seguimiento para rastreo. Por
   defecto: `https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=`. Tener en
   cuenta que OCA suele cambiar esta URL.
-- **Min box volume:** (***) Para calcular los costos de envío, OCA requiere que se le indique el volumen de lo que se va
+- **Min box volume:** Para calcular los costos de envío, OCA requiere que se le indique el volumen de lo que se va
   a enviar, en caso de no tener atributos en los productos con los que se pueda calcular el volumen, se utilizará este
-  valor.
+  valor. Dependiendo el contrato con OCA puede que este valor no sea necesario y se utilice el peso.
 - **Product (width|height|length) attribute:** Atributo del producto que se utilizará para calcular el volumen.
 - **Unit product attribute:** Unidad de medida en la que está expresada la dimensión del producto.
 
 _* Valor requerido para el cálculo de costo de envío_
 
 _** Valor requerido para impresión de etiquetas_
-
-_*** Valor requerido en caso de no tener atributos de dimensiones en los productos_
 
 ### Operatorias
 

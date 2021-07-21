@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="customer_address" translate="label" type="text" sortOrder="1000" showInDefault="1" showInWebsite="1"
+        showInStore="1">
+        <label>Customer Address</label>
+        <field id="street" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1" canRestore="1">
+            <label>Street</label>
+            <source_model>Gento\Oca\Model\Config\Source\CustomerAddressAttributes</source_model>
+        </field>
+        <field id="number" translate="label" type="select" sortOrder="2" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Number</label>
+            <source_model>Gento\Oca\Model\Config\Source\CustomerAddressAttributes</source_model>
+        </field>
+        <field id="floor" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Floor</label>
+            <source_model>Gento\Oca\Model\Config\Source\CustomerAddressAttributes</source_model>
+        </field>
+        <field id="dept" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Department</label>
+            <source_model>Gento\Oca\Model\Config\Source\CustomerAddressAttributes</source_model>
+        </field>
+    </group>
+</include>

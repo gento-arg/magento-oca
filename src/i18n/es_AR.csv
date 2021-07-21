@@ -1,6 +1,10 @@
+"< Street Line %1 >","< Street Line %1 >"
+"Customer Address","Dirección del cliente"
 "Delete Branch","Borrar sucursal"
 "Delete Operatory","Delete operatoria"
 Branches,Sucursales
+Floor,Piso
+Department,Departmento
 "New Branch","Nueva sucursal"
 "Something went wrong while saving the Branch.","Ocurrió un error al intentar guardar la sucursal."
 "You saved the Branch","La sucursal fue guardada"

@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <carriers>
             <gento_oca>
                 <active>0</active>
                 <model>Gento\Oca\Model\Carrier</model>
                 <title>OCA</title>
-                <max_package_weight>50</max_package_weight>
+                <max_package_weight>100</max_package_weight>
                 <service_url>http://webservice.oca.com.ar/oep_tracking_test/Oep_Track.asmx</service_url>
                 <elocker_service_url>http://webservice.oca.com.ar/epak_tracking_test/Oep_TrackEPak.asmx</elocker_service_url>
                 <tracking_url>https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</tracking_url>
@@ -18,6 +18,12 @@
 {{/if}}{{if address_tower}}Torre: {{var address_tower}}
 {{/if}}{{if telephone}}{{var telephone}}
 {{/if}}{{if email}}{{var email}} {{/if}}]]></branch_description>
+                <volume>
+                    <min>0</min>
+                </volume>
+                <customer_address>
+                    <street>__street_line_1</street>
+                </customer_address>
             </gento_oca>
         </carriers>
     </default>

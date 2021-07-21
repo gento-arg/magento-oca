@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="general" translate="label" type="text" sortOrder="900" showInDefault="1" showInWebsite="1"
+        showInStore="1">
+        <label>General</label>
+        <attribute type="expanded">1</attribute>
+        <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Enabled</label>
+            <comment>Enable to edit specific values</comment>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>carriers/gento_oca/active</config_path>
+        </field>
+        <field id="title" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1"
+            showInStore="0">
+            <label>Titulo</label>
+            <config_path>carriers/gento_oca/title</config_path>
+        </field>
+        <field id="allowspecific" translate="label" type="allowspecific" sortOrder="40" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Allow Specific Country</label>
+            <source_model>Magento\Payment\Model\Config\Source\Allspecificcountries</source_model>
+            <config_path>carriers/gento_oca/allowspecific</config_path>
+        </field>
+        <field id="specificcountry" translate="label" type="multiselect" sortOrder="50" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Specific Country</label>
+            <source_model>Magento\Directory\Model\Config\Source\Country</source_model>
+            <depends>
+                <field id="*/*/*/allowspecific">1</field>
+            </depends>
+            <config_path>carriers/gento_oca/specificcountry</config_path>
+        </field>
+        <field id="showmethod" translate="label" type="select" sortOrder="90" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Show method if not applicable</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>carriers/gento_oca/showmethod</config_path>
+        </field>
+        <field id="specificerrmsg" translate="label" type="textarea" sortOrder="100" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Displayed Error Message</label>
+            <config_path>carriers/gento_oca/specificerrmsg</config_path>
+        </field>
+        <field id="sort_order" translate="label" type="text" sortOrder="130" showInDefault="1" showInWebsite="1"
+            showInStore="0">
+            <label>Sort Order</label>
+            <config_path>carriers/gento_oca/sort_order</config_path>
+        </field>
+        <field id="account_number" translate="label" type="text" sortOrder="140" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Account number</label>
+            <comment>OCA E-Pak account number</comment>
+            <config_path>carriers/gento_oca/account_number</config_path>
+        </field>
+        <field id="username" translate="label" type="text" sortOrder="150" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Username</label>
+            <comment>OCA E-Pak username</comment>
+            <config_path>carriers/gento_oca/username</config_path>
+        </field>
+        <field id="password" translate="label" type="obscure" sortOrder="160" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Password</label>
+            <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+            <comment>OCA E-Pak password</comment>
+            <config_path>carriers/gento_oca/password</config_path>
+        </field>
+        <field id="cuit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>CUIT</label>
+            <comment>Ingrese el numero sin guiones. Ej: 30536259194</comment>
+            <config_path>carriers/gento_oca/cuit</config_path>
+        </field>
+        <field id="service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
+            showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Oep WebService URL</label>
+            <config_path>carriers/gento_oca/service_url</config_path>
+        </field>
+        <field id="elocker_service_url" translate="label" type="text" sortOrder="500" showInDefault="1"
+            showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Epak WebService URL</label>
+            <config_path>carriers/gento_oca/elocker_service_url</config_path>
+        </field>
+        <field id="tracking_url" translate="label" type="text" sortOrder="510" showInDefault="1"
+            showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Tracking URL</label>
+            <comment>Ej: https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=</comment>
+            <config_path>carriers/gento_oca/tracking_url</config_path>
+        </field>
+        <field id="days" translate="label" type="text" sortOrder="180" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Days to send</label>
+            <comment>Days between the order is received and the package is sent to OCA</comment>
+            <config_path>carriers/gento_oca/days</config_path>
+        </field>
+        <field id="days_extra" translate="label" type="text" sortOrder="190" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Days to send (Extra)</label>
+            <comment>This will add only on checkout info, and will not be informed to OCA</comment>
+            <config_path>carriers/gento_oca/days_extra</config_path>
+        </field>
+        <field id="show_days" translate="label" type="select" sortOrder="191" showInDefault="1"
+            showInWebsite="1"
+            showInStore="1">
+            <label>Show days to send</label>
+            <comment>Enable the display of days on carrier</comment>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>carriers/gento_oca/show_days</config_path>
+        </field>
+        <field id="reception_time" translate="label" type="select" sortOrder="200" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Reception time</label>
+            <comment>The time frame when the shipment should be picked up by OCA</comment>
+            <source_model>Gento\Oca\Model\Config\Source\ReceptionTime</source_model>
+            <config_path>carriers/gento_oca/reception_time</config_path>
+        </field>
+        <field id="confirm" translate="label" type="select" sortOrder="210" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Confirm</label>
+            <comment>Enable draft to shippings (If true, need to be confirmed on OCA Epak Dashboard)</comment>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>carriers/gento_oca/confirm</config_path>
+        </field>
+        <field id="disabled_cp" translate="label" type="textarea" sortOrder="220" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Disabled Postal codes</label>
+            <comment>One by line</comment>
+            <config_path>carriers/gento_oca/disabled_cp</config_path>
+        </field>
+        <field id="branch_description" translate="label" type="textarea" sortOrder="230" showInDefault="1"
+            showInWebsite="1" showInStore="1" canRestore="1">
+            <label>Branch description</label>
+            <comment>Variables: code, short_name, address_street, address_number, address_floor, address_dpt, address_tower, telephone, email, city, zipcode</comment>
+            <config_path>carriers/gento_oca/branch_description</config_path>
+        </field>
+        <field id="branch_autopopulate" translate="label" type="select" sortOrder="231" showInDefault="1"
+            showInWebsite="1" showInStore="1">
+            <label>Populate Branches From Addresses Zip/Postal Codes on Checkout</label>
+            <comment>Enable to auto populate branches</comment>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>carriers/gento_oca/branch_autopopulate</config_path>
+        </field>
+    </group>
+</include>

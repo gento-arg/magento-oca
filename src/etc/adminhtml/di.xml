@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <type name="Gento\Oca\Controller\Adminhtml\Operatory\Index">
         <arguments>
             <argument name="activeMenuItem" xsi:type="string">Gento_Oca::operatories</argument>
@@ -10,10 +10,11 @@
     <type name="Gento\Oca\Controller\Adminhtml\Operatory\MassDelete">
         <arguments>
             <argument name="collectionProvider"
-                      xsi:type="object">Gento\Oca\Model\Operatory\CollectionProvider</argument>
+                xsi:type="object">Gento\Oca\Model\Operatory\CollectionProvider</argument>
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Operatory\Executor\Delete</argument>
             <argument name="successMessage" xsi:type="string">A total of %1 Operatories have been deleted.</argument>
-            <argument name="errorMessage" xsi:type="string" translate="true">An error occurred while deleting Operatories.</argument>
+            <argument name="errorMessage" xsi:type="string"
+                translate="true">An error occurred while deleting Operatories.</argument>
         </arguments>
     </type>
     <type name="Gento\Oca\Controller\Adminhtml\Operatory\Delete">
@@ -21,8 +22,10 @@
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Operatory\Executor\Delete</argument>
             <argument name="paramName" xsi:type="string">operatory_id</argument>
             <argument name="successMessage" xsi:type="string" translate="true">Operatory was deleted</argument>
-            <argument name="missingEntityErrorMessage" xsi:type="string" translate="true">Requested Operatory for delete does not exist.</argument>
-            <argument name="generalErrorMessage" xsi:type="string" translate="true">There was a problem deleting the Operatory</argument>
+            <argument name="missingEntityErrorMessage" xsi:type="string"
+                translate="true">Requested Operatory for delete does not exist.</argument>
+            <argument name="generalErrorMessage" xsi:type="string"
+                translate="true">There was a problem deleting the Operatory</argument>
         </arguments>
     </type>
     <type name="Gento\Oca\Controller\Adminhtml\Branch\Index">
@@ -37,7 +40,7 @@
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Branch\Executor\Delete</argument>
             <argument name="successMessage" xsi:type="string">A total of %1 Branches have been deleted.</argument>
             <argument name="errorMessage" xsi:type="string"
-                      translate="true">An error occurred while deleting Branches.</argument>
+                translate="true">An error occurred while deleting Branches.</argument>
         </arguments>
     </type>
     <type name="Gento\Oca\Controller\Adminhtml\Branch\Delete">
@@ -45,8 +48,10 @@
             <argument name="executor" xsi:type="object">Gento\Oca\Model\Branch\Executor\Delete</argument>
             <argument name="paramName" xsi:type="string">branch_id</argument>
             <argument name="successMessage" xsi:type="string" translate="true">Branch was deleted</argument>
-            <argument name="missingEntityErrorMessage" xsi:type="string" translate="true">Requested Branch for delete does not exist.</argument>
-            <argument name="generalErrorMessage" xsi:type="string" translate="true">There was a problem deleting the Branch</argument>
+            <argument name="missingEntityErrorMessage" xsi:type="string"
+                translate="true">Requested Branch for delete does not exist.</argument>
+            <argument name="generalErrorMessage" xsi:type="string"
+                translate="true">There was a problem deleting the Branch</argument>
         </arguments>
     </type>
     <type name="Magento\Backend\Block\GlobalSearch">
