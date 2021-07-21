@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="volume" translate="label" type="text" sortOrder="900" showInDefault="1" showInWebsite="1"
+        showInStore="1">
+        <label>Volume</label>
+        <field id="min" translate="label" type="text" showInDefault="1" showInWebsite="1" showInStore="1"
+            canRestore="1">
+            <label>Min box volume</label>
+            <comment>Default volume of a shipping box (in cubic meters)</comment>
+        </field>
+        <field id="width" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Product width attribute</label>
+            <source_model>Gento\Oca\Model\Config\Source\ProductAttribute</source_model>
+        </field>
+        <field id="height" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Product height attribute</label>
+            <source_model>Gento\Oca\Model\Config\Source\ProductAttribute</source_model>
+        </field>
+        <field id="length" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Product length attribute</label>
+            <source_model>Gento\Oca\Model\Config\Source\ProductAttribute</source_model>
+        </field>
+        <field id="unit" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1"
+            showInStore="1">
+            <label>Unit product attribute</label>
+            <source_model>Gento\Oca\Model\Config\Source\UnitsAttribute</source_model>
+        </field>
+    </group>
+</include>

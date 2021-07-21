@@ -227,6 +227,16 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $rateResult;
     }
 
+    protected function calculateVolume(Product $product)
+    {
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        list($width, $height, $length) = $this->helper->getProductSize($product);
+
+        return $width * $height * $length;
+    }
+
     public function processOperatory(
         $operatory,
         Result $rateResult,
@@ -273,7 +283,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $quoteValue = 0;
         }
 
-        $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        $plazoEntrega = $tarifa->PlazoEntrega + (int) $this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
         $this->_addRate(
             $rateResult,
             $operatory,
@@ -283,42 +293,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         );
 
         return $rateResult;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isTrackingAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isShippingLabelsAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getContainerTypes(DataObject $params = null): array
-    {
-        return [
-            'gento_oca' => $this->getConfigData('title')
-        ];
-    }
-
-    protected function calculateVolume(Product $product)
-    {
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
-
-        list($width, $height, $length) = $this->helper->getProductSize($product);
-
-        return $width * $height * $length;
     }
 
     protected function _addRate(
@@ -390,19 +364,36 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     /**
      * @inheritdoc
      */
+    public function isTrackingAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isShippingLabelsAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        return [
+            'gento_oca' => $this->getConfigData('title')
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
     protected function _doShipmentRequest(DataObject $request)
     {
         $result = new DataObject();
         try {
-            /**
-             * WIP
-             * ✅ Domicilio a Domicilio
-             * ✅ Domicilio a Sucursal
-             *
-             * ❌ Sucursal a Sucursal
-             * ❌ Sucursal a Domicilio
-             */
-
             $shipperProvinceCode = $request->getData('shipper_address_state_or_province_code');
             $shipperCountryCode = $request->getData('shipper_address_country_code');
             $shipperProvince = $this->_regionFactory->create()
@@ -434,6 +425,18 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 $originBranch = $order->getShippingOriginBranch();
             }
             $request->setCentroImposicionOrigen($originBranch);
+
+            $fields = ['street', 'number', 'floor', 'dept'];
+            $shippingAddress = $order->getShippingAddress();
+            foreach ($fields as $field) {
+                $fieldData = $this->getConfigData('customer_address/' . $field);
+                if (preg_match('/^\_\_street\_line\_([0-9]+)/', $fieldData, $matches)) {
+                    $value = $shippingAddress->getStreetLine($matches[1]);
+                } else {
+                    $value = $shippingAddress->getData($fieldData);
+                }
+                $request->{'setRecipientAddress' . ucfirst($field)}($value);
+            }
 
             $admision = $this->ocaApi->requestShipment($request);
 
