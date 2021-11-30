@@ -417,6 +417,12 @@ class OcaApi
         return $branches;
     }
 
+    /**
+     * @param $zipCode
+     *
+     * @throws Throwable
+     * @return array
+     */
     public function getDeliveryBranchesZipCode($zipCode)
     {
         $branches = [];
