@@ -10,6 +10,9 @@
         "magento/module-config": "*",
         "magento/module-ui": "*"
     },
+    "suggest": {
+        "magento/module-graph-ql": "For use graphql endpoints"
+    },
     "license": [
         "OSL-3.0",
         "AFL-3.0"
