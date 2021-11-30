@@ -7,6 +7,7 @@
     * [Tienda](#Configuración-de-tienda)
     * [Método](#Configuración-de-método-de-envío)
     * [Operatorias](#Operatorias)
+* [GraphQL](#GraphQL)
 * [Desinstalar](#Desinstalar)
 * [Contributing](#Contributing)
 
@@ -77,8 +78,8 @@ contratos y estimar los costos de envío. A continuación se explican los difere
 - **Tracking URL:** Ésta URL será a la que se le concatenará el número de seguimiento para rastreo. Por
   defecto: `https://www5.oca.com.ar/ocaepakNet/Views/ConsultaTracking/TrackingConsult.aspx?numberTracking=`. Tener en
   cuenta que OCA suele cambiar esta URL.
-- **Min box volume:** Para calcular los costos de envío, OCA requiere que se le indique el volumen de lo que se va
-  a enviar, en caso de no tener atributos en los productos con los que se pueda calcular el volumen, se utilizará este
+- **Min box volume:** Para calcular los costos de envío, OCA requiere que se le indique el volumen de lo que se va a
+  enviar, en caso de no tener atributos en los productos con los que se pueda calcular el volumen, se utilizará este
   valor. Dependiendo el contrato con OCA puede que este valor no sea necesario y se utilice el peso.
 - **Product (width|height|length) attribute:** Atributo del producto que se utilizará para calcular el volumen.
 - **Unit product attribute:** Unidad de medida en la que está expresada la dimensión del producto.
@@ -104,6 +105,84 @@ En el menú `GENTo -> Operatories` se deben agregar las operatorias con las que 
 Las sucursales se crean automáticamente con una sincronización de cron. Una vez que fueron creadas, es posible
 deshabilitarlas o incluso cambiar ciertos datos.
 *Atención: Si se cambia el código de la sucursal, puede que no funcione correctamente.*
+
+## GraphQL
+
+Usando el endpoint de graphql es posible filtrar las sucursales por código postal:
+
+```HTTP
+path: /graphql
+method: POST
+body: { "query": "query { ocaBranches ( zipCode: \"2000\" ) { items { code short_name address_street address_number address_floor address_dpt address_tower telephone email city zipcode servicios branch_description } } }" }
+```
+
+Esa consulta retorna:
+
+```JSON
+{
+    "data": {
+        "ocaBranches": {
+            "items": [
+                {
+                    "code": "93",
+                    "short_name": "RO1",
+                    "address_street": "CORRIENTES",
+                    "address_number": "746",
+                    "address_floor": "",
+                    "address_dpt": "",
+                    "address_tower": "",
+                    "telephone": "0341-4496111",
+                    "email": "",
+                    "city": "ROSARIO",
+                    "zipcode": "2000",
+                    "servicios": [
+                        "1",
+                        "2",
+                        "3"
+                    ],
+                    "branch_description": "ROSARIO\nCORRIENTES 746\n0341-4496111\n"
+                },
+                {
+                    "code": "587",
+                    "short_name": "D50",
+                    "address_street": "BOULEVARD BELGRANO",
+                    "address_number": "1250",
+                    "address_floor": "",
+                    "address_dpt": "",
+                    "address_tower": "",
+                    "telephone": "03476-15-582392",
+                    "email": "",
+                    "city": "TOTORAS",
+                    "zipcode": "2144",
+                    "servicios": [
+                        "1",
+                        "2"
+                    ],
+                    "branch_description": "TOTORAS\nBOULEVARD BELGRANO 1250\n03476-15-582392\n"
+                },
+                {
+                    "code": "595",
+                    "short_name": "D55",
+                    "address_street": "SAN MARTIN",
+                    "address_number": "1482",
+                    "address_floor": "",
+                    "address_dpt": "",
+                    "address_tower": "",
+                    "telephone": "426-3357",
+                    "email": "",
+                    "city": "ROSARIO",
+                    "zipcode": "2000",
+                    "servicios": [
+                        "1",
+                        "2"
+                    ],
+                    "branch_description": "ROSARIO\nSAN MARTIN 1482\n426-3357\n"
+                }
+            ]
+        }
+    }
+}
+```
 
 ## Desinstalar
 

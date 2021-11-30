@@ -1,0 +1,26 @@
+type Query {
+    ocaBranches (
+        zipCode: String @doc(description: "Zip Code destination")
+    ): OcaBranches
+    @resolver(class: "Gento\\Oca\\Model\\Resolver\\Branches") @doc(description: "Search for oca branches.")
+}
+
+type OcaBranches @doc(description: "Top level object returned in a oca branches search.") {
+    items: [OcaBranch] @doc(description: "An array of pickup locations that match the specific search request.")
+}
+
+type OcaBranch @doc(description: "OCA Branch structure.") {
+    code: String @doc(description: "OCA internal code")
+    short_name: String @doc(description: "OCA internal name")
+    address_street: String @doc(description: "Street address")
+    address_number: String @doc(description: "Street number")
+    address_floor: String @doc(description: "Street floor")
+    address_dpt: String @doc(description: "Street department")
+    address_tower: String @doc(description: "Street tower")
+    telephone: String @doc(description: "Telephone number")
+    email: String @doc(description: "Contact email")
+    city: String @doc(description: "City name")
+    zipcode: String @doc(description: "Zip code")
+    servicios: [String] @doc(description: "Enabled services")
+    branch_description: String @doc(description: "Branch description")
+}
