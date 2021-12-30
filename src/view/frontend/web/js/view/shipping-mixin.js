@@ -19,10 +19,12 @@ define([
 
                 let useIdci = window.checkoutConfig.oca.useBranches;
                 let shippingAddress = quote.shippingAddress();
-                let carrier = shippingAddress['carrier_code'];
-                let method = shippingAddress['method_code'];
+                let shippingMethod = quote.shippingMethod();
+                // "shippingAddress[*] ?? " Magento <2.4 compat
+                let carrier = shippingAddress['carrier_code'] ?? shippingMethod['carrier_code'];
+                let method = shippingAddress['method_code'] ?? shippingMethod['method_code'];
 
-                if (carrier != 'gento_oca' || !useIdci.includes(method)) {
+                if (carrier !== 'gento_oca' || !useIdci.includes(method)) {
                     return true;
                 }
 
