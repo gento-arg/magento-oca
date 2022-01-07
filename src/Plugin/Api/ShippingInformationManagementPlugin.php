@@ -19,7 +19,7 @@ class ShippingInformationManagementPlugin
     private $operatoryCollectionFactory;
 
     /**
-     * @param QuoteRepository $quoteRepository
+     * @param QuoteRepository   $quoteRepository
      * @param CollectionFactory $operatoryCollectionFactory
      */
     public function __construct(
@@ -32,8 +32,8 @@ class ShippingInformationManagementPlugin
 
     /**
      * @param ShippingInformationManagement $subject
-     * @param $cartId
-     * @param ShippingInformationInterface $addressInformation
+     * @param                               $cartId
+     * @param ShippingInformationInterface  $addressInformation
      */
     public function beforeSaveAddressInformation(
         ShippingInformationManagement $subject,
@@ -47,18 +47,19 @@ class ShippingInformationManagementPlugin
                 $quote = $this->quoteRepository->getActive($cartId);
 
                 $quote->setShippingBranch($ocaBranch);
-                $originBranch = null;
-                $operatory = $this->operatoryCollectionFactory->create()
-                    ->getActiveList()
-                    ->getFilterByCode($addressInformation->getShippingMethodCode())
-                    ->getFirstItem();
-
-                if ($operatory->getId() > 0) {
-                    $originBranch = $operatory->getOriginBranchId();
-                }
-                $quote->setShippingOriginBranch($originBranch);
-                $this->quoteRepository->save($quote);;
             }
+
+            $originBranch = null;
+            $operatory = $this->operatoryCollectionFactory->create()
+                ->getActiveList()
+                ->getFilterByCode($addressInformation->getShippingMethodCode())
+                ->getFirstItem();
+
+            if ($operatory->getId() > 0) {
+                $originBranch = $operatory->getOriginBranchId();
+            }
+            $quote->setShippingOriginBranch($originBranch);
+            $this->quoteRepository->save($quote);;
         }
     }
 }

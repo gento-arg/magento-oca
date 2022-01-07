@@ -8,6 +8,9 @@ use Gento\Oca\Model\OcaApi;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\QuoteRepository;
+use Magento\Sales\Model\Order;
 
 class PlaceOrderBeforeObserver implements ObserverInterface
 {
@@ -27,15 +30,16 @@ class PlaceOrderBeforeObserver implements ObserverInterface
 
     /**
      * SubmitBeforeObserver constructor.
+     *
      * @param BranchRepositoryInterface $branchRepository
-     * @param Data $helper
-     * @param \Magento\Quote\Model\QuoteRepository $quoteRepository
-     * @param OcaApi $ocaApi
+     * @param Data                      $helper
+     * @param QuoteRepository           $quoteRepository
+     * @param OcaApi                    $ocaApi
      */
     public function __construct(
         BranchRepositoryInterface $branchRepository,
         Data $helper,
-        \Magento\Quote\Model\QuoteRepository $quoteRepository,
+        QuoteRepository $quoteRepository,
         OcaApi $ocaApi
     ) {
         $this->branchRepository = $branchRepository;
@@ -46,6 +50,7 @@ class PlaceOrderBeforeObserver implements ObserverInterface
 
     /**
      * @param Observer $observer
+     *
      * @return $this|void
      */
     public function execute(Observer $observer)
