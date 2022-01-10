@@ -43,9 +43,8 @@ class ShippingInformationManagementPlugin
         if ($addressInformation->getShippingCarrierCode() === 'gento_oca') {
             $extAttributes = $addressInformation->getShippingAddress()->getExtensionAttributes();
             $ocaBranch = $extAttributes->getGentoOcaBranch();
+            $quote = $this->quoteRepository->getActive($cartId);
             if ($ocaBranch) {
-                $quote = $this->quoteRepository->getActive($cartId);
-
                 $quote->setShippingBranch($ocaBranch);
             }
 
