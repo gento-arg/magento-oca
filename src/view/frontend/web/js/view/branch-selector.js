@@ -57,9 +57,11 @@ define([
                     ocaBranch = this.selectedBranch().code;
                     description = this.selectedBranch().branch_description;
                 }
+
                 shippingAddress['extension_attributes']['gento_oca_branch'] = ocaBranch;
                 shippingAddress['extension_attributes']['gento_oca_branch_description'] = description;
                 quote.shippingAddress(shippingAddress)
+
                 ocaData.setSelectedOcaBranch(ocaBranch);
             })
             return this;
