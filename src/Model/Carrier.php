@@ -5,6 +5,7 @@ namespace Gento\Oca\Model;
 use DateTime;
 use Exception;
 use Gento\Oca\Helper\Data;
+use Gento\Oca\Model\Carrier\Command\GetFreePackages;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
@@ -74,29 +75,36 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     private $helper;
 
     /**
+     * @var GetFreePackages
+     */
+    private GetFreePackages $getFreePackages;
+
+    /**
      * Carrier constructor.
+     *
      * @param ProductRepositoryInterface $productRepository
-     * @param ScopeConfigInterface $scopeConfig
-     * @param RateResultErrorFactory $rateErrorFactory
-     * @param LoggerInterface $logger
-     * @param RateFactory $rateResultFactory
-     * @param MethodFactory $rateMethodFactory
-     * @param CollectionFactory $operatoryCollectionFactory
-     * @param OcaApi $ocaApi
-     * @param ManagerInterface $eventManager
-     * @param Security $xmlSecurity
-     * @param ElementFactory $xmlElFactory
-     * @param ResultFactory $trackFactory
-     * @param ResultErrorFactory $trackErrorFactory
-     * @param StatusFactory $trackStatusFactory
-     * @param RegionFactory $regionFactory
-     * @param CountryFactory $countryFactory
-     * @param CurrencyFactory $currencyFactory
-     * @param DirectoryData $directoryData
-     * @param StockRegistryInterface $stockRegistry
-     * @param PricingHelperData $pricingHelper
-     * @param Data $helper
-     * @param array $data
+     * @param ScopeConfigInterface       $scopeConfig
+     * @param RateResultErrorFactory     $rateErrorFactory
+     * @param LoggerInterface            $logger
+     * @param RateFactory                $rateResultFactory
+     * @param MethodFactory              $rateMethodFactory
+     * @param CollectionFactory          $operatoryCollectionFactory
+     * @param OcaApi                     $ocaApi
+     * @param ManagerInterface           $eventManager
+     * @param Security                   $xmlSecurity
+     * @param ElementFactory             $xmlElFactory
+     * @param ResultFactory              $trackFactory
+     * @param ResultErrorFactory         $trackErrorFactory
+     * @param StatusFactory              $trackStatusFactory
+     * @param RegionFactory              $regionFactory
+     * @param CountryFactory             $countryFactory
+     * @param CurrencyFactory            $currencyFactory
+     * @param DirectoryData              $directoryData
+     * @param StockRegistryInterface     $stockRegistry
+     * @param PricingHelperData          $pricingHelper
+     * @param Data                       $helper
+     * @param GetFreePackages            $getFreePackages
+     * @param array                      $data
      */
     public function __construct(
         ProductRepositoryInterface $productRepository,
@@ -120,6 +128,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         StockRegistryInterface $stockRegistry,
         PricingHelperData $pricingHelper,
         Data $helper,
+        GetFreePackages $getFreePackages,
         array $data = []
     ) {
         $this->productRepository = $productRepository;
@@ -146,6 +155,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $stockRegistry,
             $data
         );
+        $this->getFreePackages = $getFreePackages;
     }
 
     /**
@@ -167,7 +177,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             return false;
         }
 
-        $cps = trim($this->getConfigData('disabled_cp'));
+        $cps = trim($this->getConfigData('disabled_cp') ?? '');
         if ($cps) {
             $cp = $request->getDestPostcode();
             $cps = explode("\n", $cps);
@@ -180,15 +190,11 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $rateResult = $this->_rateFactory->create();
 
         $volume = 0;
-        $freeBoxes = 0;
-        $weight = floatval($request->getPackageWeight());
+        $freeBoxes = $this->getFreePackages->execute($request);
+        $weight = $request->getPackageWeight();
 
         if ($request->getAllItems()) {
             foreach ($request->getAllItems() as $item) {
-                if ($item->getFreeShipping() && !$item->getProduct()->isVirtual()) {
-                    $freeBoxes += $item->getQty();
-                }
-
                 if (!$item->getProduct()->isVirtual()) {
                     $volume += $this->calculateVolume($item->getProduct());
                 }
@@ -288,8 +294,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $rateResult,
             $operatory,
             $operatory->getCode(),
-            $quoteValue,
-            $plazoEntrega
+            $plazoEntrega,
+            $quoteValue
         );
 
         return $rateResult;
@@ -299,8 +305,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $rateResult,
         $operatory,
         $operatoryCode,
-        $total = 0,
         $plazoEntrega,
+        $total = 0,
         $description = false
     ) {
         $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');

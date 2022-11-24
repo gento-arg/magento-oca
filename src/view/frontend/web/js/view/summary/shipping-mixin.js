@@ -9,7 +9,7 @@ define([
     return function (target) {
         return target.extend({
             getShippingMethodTitle: function () {
-                var shippingMethodTitle = this._super(),
+                let shippingMethodTitle = this._super(),
                     shippingMethod = quote.shippingMethod();
 
                 if (shippingMethod && shippingMethod['carrier_code'] === 'gento_oca' &&
