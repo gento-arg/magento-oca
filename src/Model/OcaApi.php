@@ -63,9 +63,13 @@ class OcaApi
      * @var string
      */
     protected $_cuit;
+    protected JsonHelper $jsonHelper;
+    protected string $_serviceEpakUrl;
+    protected string $_serviceUrl;
 
     /**
      * OcaApi constructor.
+     *
      * @param ScopeConfigInterface $scopeConfig
      * @param ArrayToXML $arrayToXML
      * @param EncryptorInterface $encryptor
@@ -102,8 +106,392 @@ class OcaApi
     }
 
     /**
-     * @return array[]
+     * @param $service
+     * @param array $data
+     *
+     * @return string
+     */
+    protected function callPost($service, $data = [], $epak = true)
+    {
+        $curlClient = $this->getCurlClient();
+        if ($epak) {
+            $url = $this->getServiceEpakUrl($service);
+        } else {
+            $url = $this->getServiceUrl($service);
+        }
+        $history = $this->historyFactory->create();
+        $history->setRequestUrl($url)
+            ->setService($service)
+            ->setRequestData($this->jsonHelper->serialize($data));
+
+        $curlClient->post($url, $data);
+        $response = $curlClient->getBody();
+        $history->setResponseData($response);
+
+        try {
+            $this->handleError($curlClient);
+            $history->setStatus('success');
+        } catch (Throwable $e) {
+            $history->setStatus('error');
+            throw $e;
+        } finally {
+            $this->historyRepository->save($history);
+        }
+
+        return $response;
+    }
+
+    protected function childToArray(\DOMNodeList $nodes)
+    {
+        $value = [];
+        foreach ($nodes as $childNode) {
+            if ($childNode->firstChild->nodeType === XML_ELEMENT_NODE) {
+                $value[$childNode->nodeName][] = $this->childToArray($childNode->childNodes);
+            }
+
+            if ($childNode->firstChild->nodeType === XML_TEXT_NODE) {
+                $value[$childNode->nodeName] = $childNode->nodeValue;
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function getAccountNumber()
+    {
+        return $this->scopeConfig->getValue('carriers/gento_oca/account_number');
+    }
+
+    /**
+     * @return Curl
+     */
+    protected function getCurlClient()
+    {
+        return $this->curlFactory->create();
+    }
+
+    /**
+     * @param $cuit
+     *
+     * @return false|string
+     */
+    protected function getFixedCuit($cuit)
+    {
+        if (!$cuit) {
+            return false;
+        }
+
+        if (preg_match("/^[0-9]{2}\-[0-9]{8}\-[0-9]$/", $cuit)) {
+            return $cuit;
+        }
+
+        if (strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
+            return false;
+        }
+
+        return substr($cuit, 0, 2) . '-' . substr($cuit, 2, 8) . '-' . substr($cuit, 10);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getPassword()
+    {
+        $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
+        return $this->encryptor->decrypt($password);
+    }
+
+    /**
+     * @param $service
+     *
+     * @return string
+     */
+    protected function getServiceEpakUrl($service)
+    {
+        return sprintf('%s%s',
+            $this->_serviceEpakUrl,
+            $service
+        );
+    }
+
+    /**
+     * @param $service
+     *
+     * @return string
+     */
+    protected function getServiceUrl($service)
+    {
+        return sprintf('%s%s',
+            $this->_serviceUrl,
+            $service
+        );
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function getUsername()
+    {
+        return $this->scopeConfig->getValue('carriers/gento_oca/username');
+    }
+
+    protected function getXPath($xmlString)
+    {
+        $dom = new DOMDocument();
+        $dom->loadXML($xmlString, LIBXML_NOWARNING);
+        return new DOMXpath($dom);
+    }
+
+    /**
+     * @param DataObject $request
+     *
+     * @throws Exception
+     * @return string
+     */
+    protected function getXmlOR(DataObject $request)
+    {
+        $date = new \DateTime();
+        $packages = [];
+        foreach ($request->getPackages() as $package) {
+            $packages[] = [
+                '@alto' => $package['params']['height'],
+                '@ancho' => $package['params']['width'],
+                '@largo' => $package['params']['length'],
+                '@peso' => $package['params']['weight'],
+                '@valor' => $package['params']['customs_value'],
+                '@cant' => 1,
+                // If the next line is uncomemnted, OCA will return one label for each products instead of one label
+                // for each package
+                // '@cant' => array_reduce($package['items'], function ($ax, $dx) {
+                //     return $ax + $dx['qty'];
+                // }, 0),
+            ];
+        }
+        $packages = ['paquete' => $packages];
+
+        $xmlData = [
+            'cabecera' => [
+                '@ver' => '2.0',
+                '@nrocuenta' => $this->getAccountNumber(),
+            ],
+            'origenes' => [
+                'origen' => [
+                    '@calle' => $request->getShipperAddressStreet1(),
+                    '@nro' => '',
+                    '@piso' => '',
+                    '@depto' => '',
+                    '@cp' => $request->getShipperAddressPostalCode(),
+                    '@localidad' => $request->getShipperAddressCity(),
+                    '@provincia' => $request->getShipperAddressProvince(),
+                    '@contacto' => $request->getShipperContactPersonName(),
+                    '@email' => $request->getShipperEmail(),
+                    '@solicitante' => '',
+                    '@observaciones' => '',
+                    '@centrocosto' => $request->getCentroCosto(),
+                    '@idfranjahoraria' => $request->getFranjaHoraria(),
+                    '@idcentroimposicionorigen' => $request->getCentroImposicionOrigen(),
+                    '@fecha' => $date->format('Ymd'),
+                    'envios' => [
+                        'envio' => [
+                            '@idoperativa' => $request->getOperativa(),
+                            '@nroremito' => sprintf('%s-%s',
+                                $request->getOrderShipment()->getOrder()->getIncrementId(),
+                                $request->getPackageId()
+                            ),
+                            'destinatario' => [
+                                '@apellido' => $request->getRecipientContactPersonLastName(),
+                                '@nombre' => $request->getRecipientContactPersonFirstName(),
+                                '@calle' => $request->getRecipientAddressStreet(),
+                                '@nro' => $request->getRecipientAddressNumber(),
+                                '@piso' => $request->getRecipientAddressFloor(),
+                                '@depto' => $request->getRecipientAddressDept(),
+                                '@localidad' => $request->getRecipientAddressCity(),
+                                '@provincia' => $request->getRecipientAddressProvince(),
+                                '@cp' => $request->getRecipientAddressPostalCode(),
+                                '@telefono' => $request->getRecipientContactPhoneNumber(),
+                                '@email' => $request->getRecipientEmail(),
+                                '@idci' => $request->getCentroImposicion(),
+                                '@celular' => '',
+                                '@observaciones' => '',
+                            ],
+                            'paquetes' => $packages
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        return $this->arrayToXML->buildXML($xmlData, 'ROWS');
+    }
+
+    protected function handleError(Curl $curl)
+    {
+        $xpath = $this->getXPath($curl->getBody());
+
+        $errors = $xpath->query("//Errores/Error/Descripcion");
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
+        }
+        $errors = $xpath->query("//NewDataSet/Table1/Error");
+        if ($errors->count() > 0) {
+            throw new Exception($errors->item(0)->nodeValue);
+        }
+    }
+
+    /**
+     * @param $xmlObject
+     * @param $fields
+     *
+     * @return array
+     */
+    protected function loadDataset($xmlObject, $fields, $path = '//NewDataSet/Table')
+    {
+        $table = $this->loadPaths($xmlObject, ['table' => $path]);
+        if (!isset($table['table'])) {
+            return [];
+        }
+
+        $data = [];
+        foreach ($table['table'] as $row) {
+            $data[] = $this->loadFields($row, $fields);
+        }
+        return $data;
+    }
+
+    /**
+     * @param $ci
+     * @param $fields
+     *
+     * @return array
+     */
+    protected function loadFields($ci, $fields)
+    {
+        $return = [];
+        $map = [];
+
+        array_walk($fields, function ($value, $key) use (&$map) {
+            if (is_numeric($key)) {
+                $key = $value;
+            }
+            $map[$key] = $value;
+        });
+
+        foreach ($map as $alias => $field) {
+            $value = null;
+
+            $item = $ci->getElementsByTagName($field)->item(0);
+            if ($item != null) {
+                // En caso de que sea un array de elementos (como puede ser Servicios)
+                if ($item->firstChild != null && $item->firstChild->nodeType === XML_ELEMENT_NODE) {
+                    $value = $this->childToArray($item->childNodes);
+                }
+                if ($item->firstChild == null || $item->firstChild->nodeType === XML_TEXT_NODE) {
+                    $value = $item->nodeValue;
+                }
+            }
+
+            $return[$alias] = $value;
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $xmlObject
+     * @param $paths
+     * @param $fields
+     *
+     * @return DOMElement[]
+     */
+    protected function loadPaths($xmlObject, $paths)
+    {
+        $xpath = $this->getXPath($xmlObject);
+
+        if (!is_array($paths)) {
+            $paths = [$paths];
+        }
+
+        $map = [];
+        array_walk($paths, function ($value, $key) use (&$map) {
+            if (is_numeric($key)) {
+                $key = $value;
+            }
+            $map[$key] = $value;
+        });
+
+        $data = [];
+        foreach ($map as $alias => $path) {
+            foreach ($xpath->query($path) as $ci) {
+                $data[$alias][] = $ci;
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * @param $centros
+     *
+     * @return array|array[]
+     */
+    protected function processBranches($centros)
+    {
+        array_walk($centros, function ($item, $key) use (&$centros) {
+            foreach ($item as $k => $v) {
+                $item[$k] = $v;
+                if (is_string($v))
+                    $item[$k] = trim($v);
+            }
+            $centros[$key] = $item;
+        });
+
+        return array_map(function ($row) {
+            $servicios = [];
+            if (isset($row['Servicios']) && isset($row['Servicios']['Servicio'])) {
+                foreach ($row['Servicios']['Servicio'] as $servicio) {
+                    $servicios[] = $servicio['IdTipoServicio'];
+                }
+            }
+
+            return [
+                'code' => $row['idCentroImposicion'],
+                'short_name' => $row['Sigla'] ?? '',
+                'address_street' => $row['Calle'] ?? '',
+                'address_number' => $row['Numero'] ?? '',
+                'address_floor' => $row['Piso'] ?? '',
+                'address_dpt' => $row['Depto'] ?? '',
+                'address_tower' => $row['Torre'] ?? '',
+                'telephone' => $row['Telefono'] ?? '',
+                'email' => $row['eMail'] ?? '',
+                'city' => $row['Localidad'] ?? '',
+                'zipcode' => $row['CodigoPostal'],
+                'servicios' => $servicios,
+                'active' => true,
+            ];
+        }, $centros);
+    }
+
+    /**
      * @throws Throwable
+     * @return array|array[]
+     */
+    public function getAdmisionBranches()
+    {
+        $branches = [];
+        foreach ($this->getBranchesWithService() as $branch) {
+            if (in_array(self::SERVICIO_ADMISION, $branch['servicios'])) {
+                $branches[] = $branch;
+            }
+        }
+
+        return $branches;
+    }
+
+    /**
+     * @throws Throwable
+     * @return array[]
      */
     public function getBranches()
     {
@@ -152,8 +540,9 @@ class OcaApi
 
     /**
      * @param $zipcode
-     * @return array|array[]
+     *
      * @throws Throwable
+     * @return array|array[]
      */
     public function getBranchesWithServiceZipCode($zipcode)
     {
@@ -186,117 +575,9 @@ class OcaApi
     }
 
     /**
-     * @param $operatoryCode
-     * @param $weight
-     * @param $volume
-     * @param $senderZipcode
-     * @param $receiverZipcode
-     * @param $packageQty
-     * @param $packageValue
-     * @return object
-     * @throws Throwable
-     */
-    public function getQuote(
-        $operatoryCode,
-        $weight,
-        $volume,
-        $senderZipcode,
-        $receiverZipcode,
-        $packageQty,
-        $packageValue
-    ) {
-        $data = $this->callPost(self::WS_TARIFAR_ENVIO_CORPORATIVO, [
-            'PesoTotal' => floatval($weight),
-            'VolumenTotal' => $volume,
-            'CodigoPostalOrigen' => $senderZipcode,
-            'CodigoPostalDestino' => $receiverZipcode,
-            'CantidadPaquetes' => $packageQty,
-            'ValorDeclarado' => $packageValue,
-            'Cuit' => $this->_cuit,
-            'Operativa' => $operatoryCode,
-        ]);
-
-        $dataSet = $this->loadDataset($data, [
-            'Tarifador',
-            'Precio',
-            'Ambito',
-            'PlazoEntrega',
-            'Adicional',
-            'Total',
-        ]);
-
-        if (count($dataSet) <= 0) {
-            return null;
-        }
-
-        return (object)array_shift($dataSet);
-    }
-
-    /**
-     * @param $trackingCode
-     * @return array
-     */
-    public function getTracking($trackingCode)
-    {
-        $data = $this->callPost(self::WS_TRACKING_PIEZA, [
-            'Pieza' => $trackingCode,
-            'NroDocumentoCliente' => '',
-            'CUIT' => $this->_cuit,
-        ]);
-
-        return $this->loadDataset($data, [
-            'NumeroEnvio',
-            'Motivo' => 'Descripcion_Motivo',
-            'Estado' => 'Desdcripcion_Estado',
-            'Sucursal' => 'SUC',
-            'Fecha' => 'fecha',
-        ]);
-    }
-
-    /**
-     * @param DataObject $request
-     */
-    public function requestShipment(DataObject $request)
-    {
-        //$operativa = $request->getOperativa();
-        //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
-        //$centroCosto = $centros[0]['NroCentroCosto'];
-        //
-        //$request->setCentroCosto($centroCosto);
-        $request->setCentroCosto('');
-
-        $xmlOr = $this->getXmlOR($request);
-        $xmlOr = mb_convert_encoding($xmlOr, 'ISO-8859-1', 'UTF-8');
-        return $this->getIngresoORMultiple(
-            $this->getUsername(),
-            $this->getPassword(),
-            $xmlOr
-        );
-    }
-
-    /**
-     * @return array
-     */
-    public function getOperatives()
-    {
-        $data = $this->callPost(self::WS_OPERATIVES_BY_USR, [
-            'usr' => $this->getUsername(),
-            'psw' => $this->getPassword(),
-        ]);
-
-        return $this->loadDataset($data, [
-            'IdOperativa',
-            'Descripcion',
-            'ConVolumen',
-            'ConValorDeclarado',
-            'ASucursal',
-            'OrigenSucursal',
-        ]);
-    }
-
-    /**
      * @param $cuit
      * @param $operative
+     *
      * @return array
      */
     public function getCostCenterByOperative($cuit, $operative)
@@ -319,6 +600,24 @@ class OcaApi
             'EmaiContactolRetiro',
             'ContactoRetiro',
         ]);
+    }
+
+    /**
+     * @param $zipCode
+     *
+     * @throws Throwable
+     * @return array
+     */
+    public function getDeliveryBranchesZipCode($zipCode)
+    {
+        $branches = [];
+        foreach ($this->getBranchesWithServiceZipCode($zipCode) as $branch) {
+            if (in_array(self::SERVICIO_ENTREGA, $branch['servicios'])) {
+                $branches[] = $branch;
+            }
+        }
+
+        return $branches;
     }
 
     public function getIngresoORMultiple($user, $password, $xml, $confirm = true)
@@ -385,8 +684,29 @@ class OcaApi
     }
 
     /**
+     * @return array
+     */
+    public function getOperatives()
+    {
+        $data = $this->callPost(self::WS_OPERATIVES_BY_USR, [
+            'usr' => $this->getUsername(),
+            'psw' => $this->getPassword(),
+        ]);
+
+        return $this->loadDataset($data, [
+            'IdOperativa',
+            'Descripcion',
+            'ConVolumen',
+            'ConValorDeclarado',
+            'ASucursal',
+            'OrigenSucursal',
+        ]);
+    }
+
+    /**
      * @param $ordenRetiro
      * @param $nroEnvio
+     *
      * @return string PDF on base64 encode
      */
     public function getPDFEtiqueta($ordenRetiro, $nroEnvio)
@@ -402,387 +722,93 @@ class OcaApi
     }
 
     /**
-     * @return array|array[]
-     * @throws Throwable
-     */
-    public function getAdmisionBranches()
-    {
-        $branches = [];
-        foreach ($this->getBranchesWithService() as $branch) {
-            if (in_array(self::SERVICIO_ADMISION, $branch['servicios'])) {
-                $branches[] = $branch;
-            }
-        }
-
-        return $branches;
-    }
-
-    /**
-     * @param $zipCode
+     * @param $operatoryCode
+     * @param $weight
+     * @param $volume
+     * @param $senderZipcode
+     * @param $receiverZipcode
+     * @param $packageQty
+     * @param $packageValue
      *
      * @throws Throwable
+     * @return object
+     */
+    public function getQuote(
+        $operatoryCode,
+        $weight,
+        $volume,
+        $senderZipcode,
+        $receiverZipcode,
+        $packageQty,
+        $packageValue
+    ) {
+        $data = $this->callPost(self::WS_TARIFAR_ENVIO_CORPORATIVO, [
+            'PesoTotal' => floatval($weight),
+            'VolumenTotal' => $volume,
+            'CodigoPostalOrigen' => $senderZipcode,
+            'CodigoPostalDestino' => $receiverZipcode,
+            'CantidadPaquetes' => $packageQty,
+            'ValorDeclarado' => $packageValue,
+            'Cuit' => $this->_cuit,
+            'Operativa' => $operatoryCode,
+        ]);
+
+        $dataSet = $this->loadDataset($data, [
+            'Tarifador',
+            'Precio',
+            'Ambito',
+            'PlazoEntrega',
+            'Adicional',
+            'Total',
+        ]);
+
+        if (count($dataSet) <= 0) {
+            return null;
+        }
+
+        return (object) array_shift($dataSet);
+    }
+
+    /**
+     * @param $trackingCode
+     *
      * @return array
      */
-    public function getDeliveryBranchesZipCode($zipCode)
+    public function getTracking($trackingCode)
     {
-        $branches = [];
-        foreach ($this->getBranchesWithServiceZipCode($zipCode) as $branch) {
-            if (in_array(self::SERVICIO_ENTREGA, $branch['servicios'])) {
-                $branches[] = $branch;
-            }
-        }
+        $data = $this->callPost(self::WS_TRACKING_PIEZA, [
+            'Pieza' => $trackingCode,
+            'NroDocumentoCliente' => '',
+            'CUIT' => $this->_cuit,
+        ]);
 
-        return $branches;
-    }
-
-    /**
-     * @param $cuit
-     * @return false|string
-     */
-    protected function getFixedCuit($cuit)
-    {
-        if (!$cuit || strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
-            return false;
-        }
-
-        return substr($cuit, 0, 2) . '-' . substr($cuit, 2, 8) . '-' . substr($cuit, 10);
-    }
-
-    /**
-     * @param $centros
-     * @return array|array[]
-     */
-    protected function processBranches($centros)
-    {
-        array_walk($centros, function ($item, $key) use (&$centros) {
-            foreach ($item as $k => $v) {
-                $item[$k] = $v;
-                if (is_string($v))
-                    $item[$k] = trim($v);
-            }
-            $centros[$key] = $item;
-        });
-
-        return array_map(function ($row) {
-            $servicios = [];
-            if (isset($row['Servicios']) && isset($row['Servicios']['Servicio'])) {
-                foreach ($row['Servicios']['Servicio'] as $servicio) {
-                    $servicios[] = $servicio['IdTipoServicio'];
-                }
-            }
-
-            return [
-                'code' => $row['idCentroImposicion'],
-                'short_name' => $row['Sigla'] ?? '',
-                'address_street' => $row['Calle'] ?? '',
-                'address_number' => $row['Numero'] ?? '',
-                'address_floor' => $row['Piso'] ?? '',
-                'address_dpt' => $row['Depto'] ?? '',
-                'address_tower' => $row['Torre'] ?? '',
-                'telephone' => $row['Telefono'] ?? '',
-                'email' => $row['eMail'] ?? '',
-                'city' => $row['Localidad'] ?? '',
-                'zipcode' => $row['CodigoPostal'],
-                'servicios' => $servicios,
-                'active' => true,
-            ];
-        }, $centros);
+        return $this->loadDataset($data, [
+            'NumeroEnvio',
+            'Motivo' => 'Descripcion_Motivo',
+            'Estado' => 'Desdcripcion_Estado',
+            'Sucursal' => 'SUC',
+            'Fecha' => 'fecha',
+        ]);
     }
 
     /**
      * @param DataObject $request
-     * @return string
-     * @throws Exception
      */
-    protected function getXmlOR(DataObject $request)
+    public function requestShipment(DataObject $request)
     {
-        $date = new Zend_Date();
-        $packages = [];
-        foreach ($request->getPackages() as $package) {
-            $packages[] = [
-                '@alto' => $package['params']['height'],
-                '@ancho' => $package['params']['width'],
-                '@largo' => $package['params']['length'],
-                '@peso' => $package['params']['weight'],
-                '@valor' => $package['params']['customs_value'],
-                '@cant' => 1,
-                // If the next line is uncomemnted, OCA will return one label for each products instead of one label
-                // for each package
-                // '@cant' => array_reduce($package['items'], function ($ax, $dx) {
-                //     return $ax + $dx['qty'];
-                // }, 0),
-            ];
-        }
-        $packages = ['paquete' => $packages];
+        //$operativa = $request->getOperativa();
+        //$centros = $this->getCostCenterByOperative($this->_cuit, $operativa);
+        //$centroCosto = $centros[0]['NroCentroCosto'];
+        //
+        //$request->setCentroCosto($centroCosto);
+        $request->setCentroCosto('');
 
-        $xmlData = [
-            'cabecera' => [
-                '@ver' => '2.0',
-                '@nrocuenta' => $this->getAccountNumber(),
-            ],
-            'origenes' => [
-                'origen' => [
-                    '@calle' => $request->getShipperAddressStreet1(),
-                    '@nro' => '',
-                    '@piso' => '',
-                    '@depto' => '',
-                    '@cp' => $request->getShipperAddressPostalCode(),
-                    '@localidad' => $request->getShipperAddressCity(),
-                    '@provincia' => $request->getShipperAddressProvince(),
-                    '@contacto' => $request->getShipperContactPersonName(),
-                    '@email' => $request->getShipperEmail(),
-                    '@solicitante' => '',
-                    '@observaciones' => '',
-                    '@centrocosto' => $request->getCentroCosto(),
-                    '@idfranjahoraria' => $request->getFranjaHoraria(),
-                    '@idcentroimposicionorigen' => $request->getCentroImposicionOrigen(),
-                    '@fecha' => $date->toString(Zend_Date::YEAR . Zend_Date::MONTH . Zend_Date::DAY),
-                    'envios' => [
-                        'envio' => [
-                            '@idoperativa' => $request->getOperativa(),
-                            '@nroremito' => sprintf('%s-%s',
-                                $request->getOrderShipment()->getOrder()->getIncrementId(),
-                                $request->getPackageId()
-                            ),
-                            'destinatario' => [
-                                '@apellido' => $request->getRecipientContactPersonLastName(),
-                                '@nombre' => $request->getRecipientContactPersonFirstName(),
-                                '@calle' => $request->getRecipientAddressStreet(),
-                                '@nro' => $request->getRecipientAddressNumber(),
-                                '@piso' => $request->getRecipientAddressFloor(),
-                                '@depto' => $request->getRecipientAddressDept(),
-                                '@localidad' => $request->getRecipientAddressCity(),
-                                '@provincia' => $request->getRecipientAddressProvince(),
-                                '@cp' => $request->getRecipientAddressPostalCode(),
-                                '@telefono' => $request->getRecipientContactPhoneNumber(),
-                                '@email' => $request->getRecipientEmail(),
-                                '@idci' => $request->getCentroImposicion(),
-                                '@celular' => '',
-                                '@observaciones' => '',
-                            ],
-                            'paquetes' => $packages
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        return $this->arrayToXML->buildXML($xmlData, 'ROWS');
-    }
-
-    /**
-     * @return mixed
-     */
-    protected function getAccountNumber()
-    {
-        return $this->scopeConfig->getValue('carriers/gento_oca/account_number');
-    }
-
-    /**
-     * @return mixed
-     */
-    protected function getUsername()
-    {
-        return $this->scopeConfig->getValue('carriers/gento_oca/username');
-    }
-
-    /**
-     * @return string
-     */
-    protected function getPassword()
-    {
-        $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
-        return $this->encryptor->decrypt($password);
-    }
-
-    /**
-     * @param $xmlObject
-     * @param $fields
-     * @return array
-     */
-    protected function loadDataset($xmlObject, $fields, $path = '//NewDataSet/Table')
-    {
-        $table = $this->loadPaths($xmlObject, ['table' => $path]);
-        if (!isset($table['table'])) {
-            return [];
-        }
-
-        $data = [];
-        foreach ($table['table'] as $row) {
-            $data[] = $this->loadFields($row, $fields);
-        }
-        return $data;
-    }
-
-    /**
-     * @param $xmlObject
-     * @param $paths
-     * @param $fields
-     * @return DOMElement[]
-     */
-    protected function loadPaths($xmlObject, $paths)
-    {
-        $xpath = $this->getXPath($xmlObject);
-
-        if (!is_array($paths)) {
-            $paths = [$paths];
-        }
-
-        $map = [];
-        array_walk($paths, function ($value, $key) use (&$map) {
-            if (is_numeric($key)) {
-                $key = $value;
-            }
-            $map[$key] = $value;
-        });
-
-        $data = [];
-        foreach ($map as $alias => $path) {
-            foreach ($xpath->query($path) as $ci) {
-                $data[$alias][] = $ci;
-            }
-        }
-        return $data;
-    }
-
-    /**
-     * @param $ci
-     * @param $fields
-     * @return array
-     */
-    protected function loadFields($ci, $fields)
-    {
-        $return = [];
-        $map = [];
-
-        array_walk($fields, function ($value, $key) use (&$map) {
-            if (is_numeric($key)) {
-                $key = $value;
-            }
-            $map[$key] = $value;
-        });
-
-        foreach ($map as $alias => $field) {
-            $value = null;
-
-            $item = $ci->getElementsByTagName($field)->item(0);
-            if ($item != null) {
-                // En caso de que sea un array de elementos (como puede ser Servicios)
-                if ($item->firstChild != null && $item->firstChild->nodeType === XML_ELEMENT_NODE) {
-                    $value = $this->childToArray($item->childNodes);
-                }
-                if ($item->firstChild == null || $item->firstChild->nodeType === XML_TEXT_NODE) {
-                    $value = $item->nodeValue;
-                }
-            }
-
-            $return[$alias] = $value;
-        }
-
-        return $return;
-    }
-
-    /**
-     * @return Curl
-     */
-    protected function getCurlClient()
-    {
-        return $this->curlFactory->create();
-    }
-
-    /**
-     * @param $service
-     * @return string
-     */
-    protected function getServiceEpakUrl($service)
-    {
-        return sprintf('%s%s',
-            $this->_serviceEpakUrl,
-            $service
+        $xmlOr = $this->getXmlOR($request);
+        $xmlOr = mb_convert_encoding($xmlOr, 'ISO-8859-1', 'UTF-8');
+        return $this->getIngresoORMultiple(
+            $this->getUsername(),
+            $this->getPassword(),
+            $xmlOr
         );
-    }
-
-    /**
-     * @param $service
-     * @return string
-     */
-    protected function getServiceUrl($service)
-    {
-        return sprintf('%s%s',
-            $this->_serviceUrl,
-            $service
-        );
-    }
-
-    /**
-     * @param $service
-     * @param array $data
-     * @return string
-     */
-    protected function callPost($service, $data = [], $epak = true)
-    {
-        $curlClient = $this->getCurlClient();
-        if ($epak) {
-            $url = $this->getServiceEpakUrl($service);
-        } else {
-            $url = $this->getServiceUrl($service);
-        }
-        $history = $this->historyFactory->create();
-        $history->setRequestUrl($url)
-            ->setService($service)
-            ->setRequestData($this->jsonHelper->serialize($data));
-
-        $curlClient->post($url, $data);
-        $response = $curlClient->getBody();
-        $history->setResponseData($response);
-
-        try {
-            $this->handleError($curlClient);
-            $history->setStatus('success');
-        } catch (Throwable $e) {
-            $history->setStatus('error');
-            throw $e;
-        } finally {
-            $this->historyRepository->save($history);
-        }
-
-        return $response;
-    }
-
-    protected function handleError(Curl $curl)
-    {
-        $xpath = $this->getXPath($curl->getBody());
-
-        $errors = $xpath->query("//Errores/Error/Descripcion");
-        if ($errors->count() > 0) {
-            throw new Exception($errors->item(0)->nodeValue);
-        }
-        $errors = $xpath->query("//NewDataSet/Table1/Error");
-        if ($errors->count() > 0) {
-            throw new Exception($errors->item(0)->nodeValue);
-        }
-    }
-
-    protected function getXPath($xmlString)
-    {
-        $dom = new DOMDocument();
-        $dom->loadXML($xmlString, ~LIBXML_DTDVALID);
-        return new DOMXpath($dom);
-    }
-
-    protected function childToArray(\DOMNodeList $nodes)
-    {
-        $value = [];
-        foreach ($nodes as $childNode) {
-            if ($childNode->firstChild->nodeType === XML_ELEMENT_NODE) {
-                $value[$childNode->nodeName][] = $this->childToArray($childNode->childNodes);
-            }
-
-            if ($childNode->firstChild->nodeType === XML_TEXT_NODE) {
-                $value[$childNode->nodeName] = $childNode->nodeValue;
-            }
-        }
-
-        return $value;
     }
 }

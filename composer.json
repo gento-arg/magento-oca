@@ -4,6 +4,8 @@
     "type": "magento2-module",
     "require": {
         "php": ">7.4",
+        "ext-dom": "20031129",
+        "ext-libxml": "*",
         "gento-arg/module-core": "*",
         "magento/framework": "*.*",
         "magento/module-backend": "*",

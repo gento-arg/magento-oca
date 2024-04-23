@@ -11,14 +11,18 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteRepository;
 use Magento\Sales\Model\Order;
+use Throwable;
 
 class PlaceOrderBeforeObserver implements ObserverInterface
 {
     /**
+     * @var OcaApi
+     */
+    protected $quoteRepository;
+    /**
      * @var BranchRepositoryInterface
      */
     private $branchRepository;
-
     /**
      * @var Data
      */
@@ -32,9 +36,9 @@ class PlaceOrderBeforeObserver implements ObserverInterface
      * SubmitBeforeObserver constructor.
      *
      * @param BranchRepositoryInterface $branchRepository
-     * @param Data                      $helper
-     * @param QuoteRepository           $quoteRepository
-     * @param OcaApi                    $ocaApi
+     * @param Data $helper
+     * @param QuoteRepository $quoteRepository
+     * @param OcaApi $ocaApi
      */
     public function __construct(
         BranchRepositoryInterface $branchRepository,
@@ -51,6 +55,8 @@ class PlaceOrderBeforeObserver implements ObserverInterface
     /**
      * @param Observer $observer
      *
+     * @throws NoSuchEntityException
+     * @throws Throwable
      * @return $this|void
      */
     public function execute(Observer $observer)
@@ -59,7 +65,7 @@ class PlaceOrderBeforeObserver implements ObserverInterface
         $order = $observer->getEvent()->getData('order');
 
         $shippingMethod = $order->getShippingMethod();
-        if (substr($shippingMethod, 0, 9) !== 'gento_oca') {
+        if (substr($shippingMethod ?? '', 0, 9) !== 'gento_oca') {
             return $this;
         }
 

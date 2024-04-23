@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Gento\Oca\Helper;
 
 use Gento\Oca\Model\Config\Source\UnitsAttribute;
@@ -14,6 +16,7 @@ class Data
      * @var ScopeConfigInterface
      */
     protected $scopeConfig;
+    protected FilterManager $filterManager;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
@@ -21,6 +24,30 @@ class Data
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->filterManager = $filterManager;
+    }
+
+    /**
+     * @param array $branch
+     *
+     * @return array
+     */
+    public function addDescriptionToBranch(array $branch)
+    {
+        $branch['branch_description'] = $this->getParsedDescription($branch);
+        return $branch;
+    }
+
+    /**
+     * @param $branches
+     *
+     * @return array[]
+     */
+    public function addDescriptionToBranches($branches)
+    {
+        foreach ($branches as $idx => $branch) {
+            $branches[$idx] = $this->addDescriptionToBranch($branch);
+        }
+        return $branches;
     }
 
     public function getProductSize(Product $product)
@@ -45,7 +72,7 @@ class Data
         }
 
         foreach ($attrs as $att) {
-            ${$att} = (float)$product->getData(${$att . 'Att'});
+            ${$att} = (float) $product->getData(${$att . 'Att'});
             if (${$att} > 0) {
                 ${$att} /= $factor;
             }
@@ -55,40 +82,8 @@ class Data
     }
 
     /**
-     * @param $branches
-     * @return array[]
-     */
-    public function addDescriptionToBranches($branches)
-    {
-        foreach ($branches as $idx => $branch) {
-            $branches[$idx] = $this->addDescriptionToBranch($branch);
-        }
-        return $branches;
-    }
-
-    /**
-     * @param array $branch
-     * @return array
-     */
-    public function addDescriptionToBranch(array $branch)
-    {
-        $branch['branch_description'] = $this->getParsedDescription($branch);
-        return $branch;
-    }
-
-    /**
-     * @param array $branch
-     * @return string
-     */
-    protected function getParsedDescription(array $branch)
-    {
-        $template = $this->getConfigData('carriers/gento_oca/branch_description');
-
-        return $this->filterManager->template($template, ['variables' => $branch]);
-    }
-
-    /**
      * @param $path
+     *
      * @return mixed
      */
     protected function getConfigData($path)
@@ -97,6 +92,18 @@ class Data
             $path,
             ScopeInterface::SCOPE_STORE
         );
+    }
+
+    /**
+     * @param array $branch
+     *
+     * @return string
+     */
+    protected function getParsedDescription(array $branch)
+    {
+        $template = $this->getConfigData('carriers/gento_oca/branch_description');
+
+        return $this->filterManager->template($template, ['variables' => $branch]);
     }
 
 }
