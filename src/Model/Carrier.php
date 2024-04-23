@@ -83,28 +83,28 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      * Carrier constructor.
      *
      * @param ProductRepositoryInterface $productRepository
-     * @param ScopeConfigInterface       $scopeConfig
-     * @param RateResultErrorFactory     $rateErrorFactory
-     * @param LoggerInterface            $logger
-     * @param RateFactory                $rateResultFactory
-     * @param MethodFactory              $rateMethodFactory
-     * @param CollectionFactory          $operatoryCollectionFactory
-     * @param OcaApi                     $ocaApi
-     * @param ManagerInterface           $eventManager
-     * @param Security                   $xmlSecurity
-     * @param ElementFactory             $xmlElFactory
-     * @param ResultFactory              $trackFactory
-     * @param ResultErrorFactory         $trackErrorFactory
-     * @param StatusFactory              $trackStatusFactory
-     * @param RegionFactory              $regionFactory
-     * @param CountryFactory             $countryFactory
-     * @param CurrencyFactory            $currencyFactory
-     * @param DirectoryData              $directoryData
-     * @param StockRegistryInterface     $stockRegistry
-     * @param PricingHelperData          $pricingHelper
-     * @param Data                       $helper
-     * @param GetFreePackages            $getFreePackages
-     * @param array                      $data
+     * @param ScopeConfigInterface $scopeConfig
+     * @param RateResultErrorFactory $rateErrorFactory
+     * @param LoggerInterface $logger
+     * @param RateFactory $rateResultFactory
+     * @param MethodFactory $rateMethodFactory
+     * @param CollectionFactory $operatoryCollectionFactory
+     * @param OcaApi $ocaApi
+     * @param ManagerInterface $eventManager
+     * @param Security $xmlSecurity
+     * @param ElementFactory $xmlElFactory
+     * @param ResultFactory $trackFactory
+     * @param ResultErrorFactory $trackErrorFactory
+     * @param StatusFactory $trackStatusFactory
+     * @param RegionFactory $regionFactory
+     * @param CountryFactory $countryFactory
+     * @param CurrencyFactory $currencyFactory
+     * @param DirectoryData $directoryData
+     * @param StockRegistryInterface $stockRegistry
+     * @param PricingHelperData $pricingHelper
+     * @param Data $helper
+     * @param GetFreePackages $getFreePackages
+     * @param array $data
      */
     public function __construct(
         ProductRepositoryInterface $productRepository,
@@ -158,14 +158,189 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $this->getFreePackages = $getFreePackages;
     }
 
+    protected function _addRate(
+        $rateResult,
+        $operatory,
+        $operatoryCode,
+        $plazoEntrega,
+        $total = 0,
+        $description = false
+    ) {
+        $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
+        $shouldShowDays = $this->getConfigData('show_days');
+        if ($shouldAddTax) {
+            // @todo use custom shipping tax configurable on backend
+            $total = 1.21 * floatval($total);
+        }
+
+        /** @var Method $method */
+        $method = $this->_rateMethodFactory->create();
+        $method->setCarrier($this->_code);
+        $method->setCarrierTitle($this->getConfigData('title'));
+        $method->setMethod($operatoryCode);
+
+        $shippingPrice = $total;
+
+        if ($operatory->getPaysOnDestination()) {
+            $shippingPrice = 0.0;
+        }
+
+        if (!$description) {
+            $description = $operatory->getName();
+        }
+
+        $plazoEntregaString = '';
+        if ($shouldShowDays && $plazoEntrega) {
+            $plazoEntregaString = __('(Despacho en %1 dias)', $plazoEntrega);
+        }
+        $payOnDestinationString = '';
+        if ($operatory->getPaysOnDestination()) {
+            $payOnDestinationString = __('Pagar %1 en destino.',
+                $this->pricingHelper->currency($total, true, false)
+            );
+        }
+        $methodTitle = sprintf('%s%s%s',
+            // Nombre
+            $description,
+            // Dias
+            $plazoEntregaString,
+            // Pago en destino
+            $payOnDestinationString
+        );
+        $method->setMethodTitle($methodTitle);
+
+        $method->setPrice($shippingPrice);
+        $method->setCost($shippingPrice);
+
+        $rateResult->append($method);
+    }
+
     /**
      * @inheritdoc
      */
-    public function getAllowedMethods()
+    protected function _doShipmentRequest(DataObject $request)
     {
-        return [
-            $this->_code => $this->getConfigData('title'),
-        ];
+        $result = new DataObject();
+        try {
+            $shipperProvinceCode = $request->getData('shipper_address_state_or_province_code');
+            $shipperCountryCode = $request->getData('shipper_address_country_code');
+            $shipperProvince = $this->_regionFactory->create()
+                ->loadByCode($shipperProvinceCode, $shipperCountryCode);
+            $request->setShipperAddressProvince($shipperProvince->getName() ?
+                $shipperProvince->getName() : $shipperProvinceCode);
+
+            $recipientProvinceCode = $request->getData('recipient_address_state_or_province_code');
+            $recipientCountryCode = $request->getData('recipient_address_country_code');
+            $recipientProvince = $this->_regionFactory->create()
+                ->loadByCode($recipientProvinceCode, $recipientCountryCode);
+            $request->setRecipientAddressProvince($recipientProvince->getName() ?
+                $recipientProvince->getName() : $recipientProvinceCode);
+            $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
+
+            $metodo = explode('_', $request->getShippingMethod());
+            $operativa = $metodo[0];
+            $centroImposicion = '0';
+            if ($request->getOrderShipment()->getOrder()->getShippingBranch()) {
+                $centroImposicion = $request->getOrderShipment()->getOrder()->getShippingBranch();
+            }
+            $request->setOperativa($operativa);
+            $request->setCentroImposicion($centroImposicion);
+
+            $orderShipment = $request->getOrderShipment();
+            $order = $orderShipment->getOrder();
+            $originBranch = '0';
+            if ($order->getShippingOriginBranch()) {
+                $originBranch = $order->getShippingOriginBranch();
+            }
+            $request->setCentroImposicionOrigen($originBranch);
+
+            $fields = ['street', 'number', 'floor', 'dept'];
+            $shippingAddress = $order->getShippingAddress();
+            foreach ($fields as $field) {
+                $fieldData = $this->getConfigData('customer_address/' . $field);
+                if (preg_match('/^\_\_street\_line\_([0-9]+)/', $fieldData ?? '', $matches)) {
+                    $value = $shippingAddress->getStreetLine($matches[1]);
+                } else {
+                    $value = $shippingAddress->getData($fieldData);
+                }
+                $request->{'setRecipientAddress' . ucfirst($field)}($value);
+            }
+
+            $admision = $this->ocaApi->requestShipment($request);
+
+            $data = $admision['data'];
+            if (!isset($data[0])) {
+                throw new LocalizedException(__('Webservice doesnt response any data'));
+            }
+            $ordenRetiro = $data[0]['OrdenRetiro'];
+            $numeroEnvio = $data[0]['NumeroEnvio'];
+            $labelContent = $this->ocaApi->getPDFEtiqueta($ordenRetiro, $numeroEnvio);
+
+            $result->setTrackingNumber($numeroEnvio);
+            $result->setShippingLabelContent(base64_decode($labelContent));
+        } catch (Exception $e) {
+            throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
+        }
+        return $result;
+    }
+
+    protected function calculateVolume(Product $product)
+    {
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        list($width, $height, $length) = $this->helper->getProductSize($product);
+
+        return $width * $height * $length;
+    }
+
+    protected function getStoreConfig($path)
+    {
+        return $this->_scopeConfig->getValue(
+            $path,
+            ScopeInterface::SCOPE_STORE,
+            $this->getStore()
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getTracking($trackings)
+    {
+        if (!is_array($trackings)) {
+            $trackings = [$trackings];
+        }
+
+        foreach ($trackings as $tracking) {
+            /** @var \Magento\Shipping\Model\Tracking\Result $result */
+            $result = $this->_trackFactory->create();
+            $code = $this->getConfigData('code');
+            $title = $this->getConfigData('title');
+            $url = $this->getConfigData('tracking_url');
+            $trackingResults = $this->ocaApi->getTracking($tracking);
+            /** @var Status $status */
+            $status = $this->_trackStatusFactory->create();
+            $status->setCarrier($code);
+            $status->setCarrierTitle($title);
+            $status->setTracking($tracking);
+            $status->setUrl($url . $tracking);
+            $progress = [];
+            foreach ($trackingResults as $trackingResult) {
+                $fecha = new DateTime($trackingResult['Fecha']);
+
+                $progress[] = [
+                    'deliverylocation' => $trackingResult['Sucursal'],
+                    'deliverydate' => $fecha->format('d-m-Y'),
+                    'deliverytime' => $fecha->format('H:n'),
+                    'activity' => $trackingResult['Estado'],
+                ];
+            }
+            $status->setProgressdetail($progress);
+
+            $result->append($status);
+        }
+        return $result;
     }
 
     /**
@@ -233,14 +408,40 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $rateResult;
     }
 
-    protected function calculateVolume(Product $product)
+    /**
+     * @inheritdoc
+     */
+    public function getAllowedMethods()
     {
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
+        return [
+            $this->_code => $this->getConfigData('title'),
+        ];
+    }
 
-        list($width, $height, $length) = $this->helper->getProductSize($product);
+    /**
+     * @inheritdoc
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        return [
+            'gento_oca' => $this->getConfigData('title')
+        ];
+    }
 
-        return $width * $height * $length;
+    /**
+     * @inheritdoc
+     */
+    public function isShippingLabelsAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isTrackingAvailable()
+    {
+        return true;
     }
 
     public function processOperatory(
@@ -299,206 +500,5 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         );
 
         return $rateResult;
-    }
-
-    protected function _addRate(
-        $rateResult,
-        $operatory,
-        $operatoryCode,
-        $plazoEntrega,
-        $total = 0,
-        $description = false
-    ) {
-        $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
-        $shouldShowDays = $this->getConfigData('show_days');
-        if ($shouldAddTax) {
-            // @todo use custom shipping tax configurable on backend
-            $total = 1.21 * floatval($total);
-        }
-
-        /** @var Method $method */
-        $method = $this->_rateMethodFactory->create();
-        $method->setCarrier($this->_code);
-        $method->setCarrierTitle($this->getConfigData('title'));
-        $method->setMethod($operatoryCode);
-
-        $shippingPrice = $total;
-
-        if ($operatory->getPaysOnDestination()) {
-            $shippingPrice = 0.0;
-        }
-
-        if (!$description) {
-            $description = $operatory->getName();
-        }
-
-        $plazoEntregaString = '';
-        if ($shouldShowDays && $plazoEntrega) {
-            $plazoEntregaString = __('(Despacho en %1 dias)', $plazoEntrega);
-        }
-        $payOnDestinationString = '';
-        if ($operatory->getPaysOnDestination()) {
-            $payOnDestinationString = __('Pagar %1 en destino.',
-                $this->pricingHelper->currency($total, true, false)
-            );
-        }
-        $methodTitle = sprintf('%s%s%s',
-            // Nombre
-            $description,
-            // Dias
-            $plazoEntregaString,
-            // Pago en destino
-            $payOnDestinationString
-        );
-        $method->setMethodTitle($methodTitle);
-
-        $method->setPrice($shippingPrice);
-        $method->setCost($shippingPrice);
-
-        $rateResult->append($method);
-    }
-
-    protected function getStoreConfig($path)
-    {
-        return $this->_scopeConfig->getValue(
-            $path,
-            ScopeInterface::SCOPE_STORE,
-            $this->getStore()
-        );
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isTrackingAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isShippingLabelsAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getContainerTypes(DataObject $params = null): array
-    {
-        return [
-            'gento_oca' => $this->getConfigData('title')
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function _doShipmentRequest(DataObject $request)
-    {
-        $result = new DataObject();
-        try {
-            $shipperProvinceCode = $request->getData('shipper_address_state_or_province_code');
-            $shipperCountryCode = $request->getData('shipper_address_country_code');
-            $shipperProvince = $this->_regionFactory->create()
-                ->loadByCode($shipperProvinceCode, $shipperCountryCode);
-            $request->setShipperAddressProvince($shipperProvince->getName() ?
-                $shipperProvince->getName() : $shipperProvinceCode);
-
-            $recipientProvinceCode = $request->getData('recipient_address_state_or_province_code');
-            $recipientCountryCode = $request->getData('recipient_address_country_code');
-            $recipientProvince = $this->_regionFactory->create()
-                ->loadByCode($recipientProvinceCode, $recipientCountryCode);
-            $request->setRecipientAddressProvince($recipientProvince->getName() ?
-                $recipientProvince->getName() : $recipientProvinceCode);
-            $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
-
-            $metodo = explode('_', $request->getShippingMethod());
-            $operativa = $metodo[0];
-            $centroImposicion = '0';
-            if ($request->getOrderShipment()->getOrder()->getShippingBranch()) {
-                $centroImposicion = $request->getOrderShipment()->getOrder()->getShippingBranch();
-            }
-            $request->setOperativa($operativa);
-            $request->setCentroImposicion($centroImposicion);
-
-            $orderShipment = $request->getOrderShipment();
-            $order = $orderShipment->getOrder();
-            $originBranch = '0';
-            if ($order->getShippingOriginBranch()) {
-                $originBranch = $order->getShippingOriginBranch();
-            }
-            $request->setCentroImposicionOrigen($originBranch);
-
-            $fields = ['street', 'number', 'floor', 'dept'];
-            $shippingAddress = $order->getShippingAddress();
-            foreach ($fields as $field) {
-                $fieldData = $this->getConfigData('customer_address/' . $field);
-                if (preg_match('/^\_\_street\_line\_([0-9]+)/', $fieldData, $matches)) {
-                    $value = $shippingAddress->getStreetLine($matches[1]);
-                } else {
-                    $value = $shippingAddress->getData($fieldData);
-                }
-                $request->{'setRecipientAddress' . ucfirst($field)}($value);
-            }
-
-            $admision = $this->ocaApi->requestShipment($request);
-
-            $data = $admision['data'];
-            if (!isset($data[0])) {
-                throw new LocalizedException(__('Webservice doesnt response any data'));
-            }
-            $ordenRetiro = $data[0]['OrdenRetiro'];
-            $numeroEnvio = $data[0]['NumeroEnvio'];
-            $labelContent = $this->ocaApi->getPDFEtiqueta($ordenRetiro, $numeroEnvio);
-
-            $result->setTrackingNumber($numeroEnvio);
-            $result->setShippingLabelContent(base64_decode($labelContent));
-        } catch (Exception $e) {
-            throw new LocalizedException(__('Error on OCA Webservice: %1', $e->getMessage()));
-        }
-        return $result;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getTracking($trackings)
-    {
-        if (!is_array($trackings)) {
-            $trackings = [$trackings];
-        }
-
-        foreach ($trackings as $tracking) {
-            /** @var \Magento\Shipping\Model\Tracking\Result $result */
-            $result = $this->_trackFactory->create();
-            $code = $this->getConfigData('code');
-            $title = $this->getConfigData('title');
-            $url = $this->getConfigData('tracking_url');
-            $trackingResults = $this->ocaApi->getTracking($tracking);
-            /** @var Status $status */
-            $status = $this->_trackStatusFactory->create();
-            $status->setCarrier($code);
-            $status->setCarrierTitle($title);
-            $status->setTracking($tracking);
-            $status->setUrl($url . $tracking);
-            $progress = [];
-            foreach ($trackingResults as $trackingResult) {
-                $fecha = new DateTime($trackingResult['Fecha']);
-
-                $progress[] = [
-                    'deliverylocation' => $trackingResult['Sucursal'],
-                    'deliverydate' => $fecha->format('d-m-Y'),
-                    'deliverytime' => $fecha->format('H:n'),
-                    'activity' => $trackingResult['Estado'],
-                ];
-            }
-            $status->setProgressdetail($progress);
-
-            $result->append($status);
-        }
-        return $result;
     }
 }
