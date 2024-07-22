@@ -17,7 +17,6 @@ use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
 use Magento\Framework\Serialize\Serializer\Json as JsonHelper;
 use Throwable;
-use Zend_Date;
 
 class OcaApi
 {
@@ -241,6 +240,7 @@ class OcaApi
     protected function getXPath($xmlString)
     {
         $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = false;
         $dom->loadXML($xmlString, LIBXML_NOWARNING);
         return new DOMXpath($dom);
     }

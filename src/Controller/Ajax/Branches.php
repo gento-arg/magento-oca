@@ -31,8 +31,8 @@ class Branches implements HttpPostActionInterface
      * Branches constructor.
      *
      * @param JsonFactory $resultJsonFactory
-     * @param Context     $context
-     * @param Branch      $branchService
+     * @param Context $context
+     * @param Branch $branchService
      */
     public function __construct(
         JsonFactory $resultJsonFactory,
