@@ -11,7 +11,6 @@ use Gento\Oca\Api\HistoryRepositoryInterface;
 use Gento\Oca\Helper\ArrayToXML;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
-use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\HTTP\Client\CurlFactory;
@@ -20,20 +19,20 @@ use Throwable;
 
 class OcaApi
 {
-    const SERVICIO_ADMISION = 1;
-    const SERVICIO_ENTREGA = 2;
-    const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
-    const WS_CENTROS_IMPOSICION_SERVICIOS = 'GetCentrosImposicionConServicios';
-    const WS_CENTROS_IMPOSICION_SERVICIOS_CP = 'GetCentrosImposicionConServiciosByCP';
-    const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
-    const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
-    const WS_MULTI_INGRESO_OR = 'IngresoORMultiplesRetiros';
-    const WS_OPERATIVES_BY_USR = 'GetOperativasByUsuario';
-    const WS_TARIFAR_ENVIO_CORPORATIVO = 'Tarifar_Envio_Corporativo';
-    const WS_TRACKING_PIEZA = 'Tracking_Pieza';
-    const XML_PATH_CUIT = 'carriers/gento_oca/cuit';
-    const XML_PATH_EPAK_SERVICE_URL = 'carriers/gento_oca/elocker_service_url';
-    const XML_PATH_SERVICE_URL = 'carriers/gento_oca/service_url';
+    public const SERVICIO_ADMISION = 1;
+    public const SERVICIO_ENTREGA = 2;
+    public const WS_CENTROS_IMPOSICION = 'GetCentrosImposicion';
+    public const WS_CENTROS_IMPOSICION_SERVICIOS = 'GetCentrosImposicionConServicios';
+    public const WS_CENTROS_IMPOSICION_SERVICIOS_CP = 'GetCentrosImposicionConServiciosByCP';
+    public const WS_COST_CENTER_BY_OP = 'GetCentroCostoPorOperativa';
+    public const WS_ETIQUETA_PDF_ORDENRETIRO = 'GetPdfDeEtiquetasPorOrdenOrNumeroEnvio';
+    public const WS_MULTI_INGRESO_OR = 'IngresoORMultiplesRetiros';
+    public const WS_OPERATIVES_BY_USR = 'GetOperativasByUsuario';
+    public const WS_TARIFAR_ENVIO_CORPORATIVO = 'Tarifar_Envio_Corporativo';
+    public const WS_TRACKING_PIEZA = 'Tracking_Pieza';
+    public const XML_PATH_CUIT = 'carriers/gento_oca/cuit';
+    public const XML_PATH_EPAK_SERVICE_URL = 'carriers/gento_oca/elocker_service_url';
+    public const XML_PATH_SERVICE_URL = 'carriers/gento_oca/service_url';
     /**
      * @var ScopeConfigInterface
      */
@@ -42,10 +41,6 @@ class OcaApi
      * @var ArrayToXML
      */
     protected $arrayToXML;
-    /**
-     * @var EncryptorInterface
-     */
-    protected $encryptor;
     /**
      * @var CurlFactory
      */
@@ -71,7 +66,6 @@ class OcaApi
      *
      * @param ScopeConfigInterface $scopeConfig
      * @param ArrayToXML $arrayToXML
-     * @param EncryptorInterface $encryptor
      * @param CurlFactory $curlFactory
      * @param HistoryInterfaceFactory $historyFactory
      * @param HistoryRepositoryInterface $historyRepository
@@ -79,7 +73,6 @@ class OcaApi
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ArrayToXML $arrayToXML,
-        EncryptorInterface $encryptor,
         CurlFactory $curlFactory,
         HistoryInterfaceFactory $historyFactory,
         HistoryRepositoryInterface $historyRepository,
@@ -87,7 +80,6 @@ class OcaApi
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->arrayToXML = $arrayToXML;
-        $this->encryptor = $encryptor;
         $this->curlFactory = $curlFactory;
         $this->historyFactory = $historyFactory;
         $this->historyRepository = $historyRepository;
@@ -199,8 +191,7 @@ class OcaApi
      */
     protected function getPassword()
     {
-        $password = $this->scopeConfig->getValue('carriers/gento_oca/password');
-        return $this->encryptor->decrypt($password);
+        return $this->scopeConfig->getValue('carriers/gento_oca/password');
     }
 
     /**
@@ -793,6 +784,9 @@ class OcaApi
 
     /**
      * @param DataObject $request
+     *
+     * @throws LocalizedException
+     * @return array[]
      */
     public function requestShipment(DataObject $request)
     {

@@ -1,6 +1,16 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Config\Model\Config\TypePool">
+        <arguments>
+            <argument name="sensitive" xsi:type="array">
+                <item name="carriers/gento_oca/password" xsi:type="string">1</item>
+            </argument>
+            <argument name="environment" xsi:type="array">
+                <item name="carriers/gento_oca/password" xsi:type="string">1</item>
+            </argument>
+        </arguments>
+    </type>
     <preference for="Gento\Oca\Api\OperatoryRepositoryInterface" type="Gento\Oca\Model\OperatoryRepository"/>
     <preference for="Gento\Oca\Api\Data\OperatoryInterface" type="Gento\Oca\Model\Operatory"/>
     <preference for="Gento\Oca\Api\Data\OperatorySearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
