@@ -1,4 +1,5 @@
 <?php
+
 namespace Gento\Oca\Ui\Component\Listing\Column;
 
 use Magento\Framework\UrlInterface;
@@ -51,8 +52,7 @@ class BranchActions extends Column
      * @param array $dataSource
      * @return array
      */
-    public function prepareDataSource(array $dataSource)
-    {
+    public function prepareDataSource(array $dataSource) {
         if (isset($dataSource['data']['items'])) {
             foreach ($dataSource['data']['items'] as &$item) {
                 if (isset($item['branch_id'])) {
@@ -77,6 +77,7 @@ class BranchActions extends Column
                             'confirm' => [
                                 'title' => __('Delete "${ $.$data.name }"'),
                                 'message' => __('Are you sure you want to delete the Branch "${ $.$data.name }" ?'),
+                                '__disableTmpl' => ['title' => false, 'message' => false],
                             ],
                         ],
                     ];
