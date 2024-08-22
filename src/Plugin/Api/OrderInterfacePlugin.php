@@ -13,7 +13,7 @@ class OrderInterfacePlugin
         $asObject = false
     ) {
         $shippingMethod = $order->getData('shipping_method');
-        if (!preg_match('/^gento_oca/', $shippingMethod)) {
+        if (empty($shippingMethod) || !preg_match('/^gento_oca/', $shippingMethod)) {
             return $proceed($asObject);
         }
 

@@ -1,9 +1,10 @@
 <?php
+
 namespace Gento\Oca\Ui\Component\Listing\Column;
 
 use Magento\Framework\UrlInterface;
-use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
+use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
 
 class OperatoryActions extends Column
@@ -51,8 +52,7 @@ class OperatoryActions extends Column
      * @param array $dataSource
      * @return array
      */
-    public function prepareDataSource(array $dataSource)
-    {
+    public function prepareDataSource(array $dataSource) {
         if (isset($dataSource['data']['items'])) {
             foreach ($dataSource['data']['items'] as & $item) {
                 if (isset($item['operatory_id'])) {
@@ -76,7 +76,8 @@ class OperatoryActions extends Column
                             'label' => __('Delete'),
                             'confirm' => [
                                 'title' => __('Delete "${ $.$data.name }"'),
-                                'message' => __('Are you sure you want to delete the Operatory "${ $.$data.name }" ?')
+                                'message' => __('Are you sure you want to delete the Operatory "${ $.$data.name }" ?'),
+                                '__disableTmpl' => ['title' => false, 'message' => false],
                             ]
                         ]
                     ];
