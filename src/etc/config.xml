@@ -25,6 +25,7 @@
                 <customer_address>
                     <street>__street_line_1</street>
                 </customer_address>
+                <history_limit>30</history_limit>
             </gento_oca>
         </carriers>
     </default>

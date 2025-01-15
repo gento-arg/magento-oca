@@ -78,6 +78,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      * @var GetFreePackages
      */
     private GetFreePackages $getFreePackages;
+    private Config $config;
 
     /**
      * Carrier constructor.
@@ -129,6 +130,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         PricingHelperData $pricingHelper,
         Data $helper,
         GetFreePackages $getFreePackages,
+        Config $config,
         array $data = []
     ) {
         $this->productRepository = $productRepository;
@@ -156,6 +158,142 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $data
         );
         $this->getFreePackages = $getFreePackages;
+        $this->config = $config;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function collectRates(RateRequest $request)
+    {
+        if (!$this->getConfigFlag('active')) {
+            return false;
+        }
+
+        $destPostCode = $this->ocaApi->filterPostCode($request->getDestPostcode());
+        if ($destPostCode === null) {
+            return false;
+        }
+        $cps = trim($this->getConfigData('disabled_cp') ?? '');
+        if ($cps) {
+            $cp = $destPostCode;
+            $cps = explode("\n", $cps);
+
+            if (in_array($cp, $cps)) {
+                return false;
+            }
+        }
+
+        $rateResult = $this->_rateFactory->create();
+
+        $volume = 0;
+        $freeBoxes = $this->getFreePackages->execute($request);
+        $weight = $request->getPackageWeight();
+
+        if ($request->getAllItems()) {
+            foreach ($request->getAllItems() as $item) {
+                if (!$item->getProduct()->isVirtual()) {
+                    $volume += $this->calculateVolume($item->getProduct());
+                }
+            }
+        }
+
+        if ($volume == 0) {
+            $volume = $this->getConfigData("volume/min");
+        }
+
+        $operatory = $this->_operatoryCollectionFactory->create();
+
+        $senderZipCode = $request->getPostcode();
+        $packageValue = $request->getPackageValue();
+
+        // @todo Create a method to calculate package qty
+        $packageQty = 1;
+
+        foreach ($operatory->getActiveList() as $operatory) {
+            $this->processOperatory(
+                $operatory,
+                $rateResult,
+                $weight,
+                $volume,
+                $senderZipCode,
+                $destPostCode,
+                $packageValue,
+                $packageQty,
+                $request->getPackageQty(),
+                $freeBoxes
+            );
+        }
+
+        return $rateResult;
+    }
+
+    protected function calculateVolume(Product $product)
+    {
+        /** @var Product $product */
+        $product = $this->productRepository->getById($product->getId());
+
+        list($width, $height, $length) = $this->helper->getProductSize($product);
+
+        return $width * $height * $length;
+    }
+
+    public function processOperatory(
+        $operatory,
+        Result $rateResult,
+        $weight,
+        $volume,
+        $senderZipcode,
+        $receiverZipcode,
+        $packageValue,
+        $packageQty,
+        $itemQty,
+        $freeQty
+    ) {
+        $tarifa = null;
+        $errorMessage = '';
+        try {
+            $tarifa = $this->ocaApi->getQuote(
+                $operatory->getCode(),
+                $weight,
+                $volume,
+                $senderZipcode,
+                $receiverZipcode,
+                $packageQty,
+                $packageValue
+            );
+        } catch (\Throwable $e) {
+            $errorMessage = $e->getMessage();
+        }
+
+        if ($tarifa == null) {
+            if ($this->getConfigData('showmethod')) {
+                $error = $this->_rateErrorFactory->create();
+                $error->setCarrier($this->_code);
+                $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
+                $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
+                $error->setErrorMessage($errorMessage);
+                $rateResult->append($error);
+            }
+            return $rateResult;
+        }
+
+        $quoteValue = $tarifa->Total;
+
+        if ($itemQty <= $freeQty) {
+            $quoteValue = 0;
+        }
+
+        $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        $this->_addRate(
+            $rateResult,
+            $operatory,
+            $operatory->getCode(),
+            $plazoEntrega,
+            $quoteValue
+        );
+
+        return $rateResult;
     }
 
     protected function _addRate(
@@ -213,6 +351,51 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $method->setCost($shippingPrice);
 
         $rateResult->append($method);
+    }
+
+    protected function getStoreConfig($path)
+    {
+        return $this->_scopeConfig->getValue(
+            $path,
+            ScopeInterface::SCOPE_STORE,
+            $this->getStore()
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getAllowedMethods()
+    {
+        return [
+            $this->_code => $this->getConfigData('title'),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getContainerTypes(DataObject $params = null): array
+    {
+        return [
+            'gento_oca' => $this->getConfigData('title')
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isShippingLabelsAvailable()
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isTrackingAvailable()
+    {
+        return true;
     }
 
     /**
@@ -284,25 +467,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $result;
     }
 
-    protected function calculateVolume(Product $product)
-    {
-        /** @var Product $product */
-        $product = $this->productRepository->getById($product->getId());
-
-        list($width, $height, $length) = $this->helper->getProductSize($product);
-
-        return $width * $height * $length;
-    }
-
-    protected function getStoreConfig($path)
-    {
-        return $this->_scopeConfig->getValue(
-            $path,
-            ScopeInterface::SCOPE_STORE,
-            $this->getStore()
-        );
-    }
-
     /**
      * @inheritdoc
      */
@@ -341,164 +505,5 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $result->append($status);
         }
         return $result;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function collectRates(RateRequest $request)
-    {
-        if (!$this->getConfigFlag('active')) {
-            return false;
-        }
-
-        $cps = trim($this->getConfigData('disabled_cp') ?? '');
-        if ($cps) {
-            $cp = $request->getDestPostcode();
-            $cps = explode("\n", $cps);
-
-            if (in_array($cp, $cps)) {
-                return false;
-            }
-        }
-
-        $rateResult = $this->_rateFactory->create();
-
-        $volume = 0;
-        $freeBoxes = $this->getFreePackages->execute($request);
-        $weight = $request->getPackageWeight();
-
-        if ($request->getAllItems()) {
-            foreach ($request->getAllItems() as $item) {
-                if (!$item->getProduct()->isVirtual()) {
-                    $volume += $this->calculateVolume($item->getProduct());
-                }
-            }
-        }
-
-        if ($volume == 0) {
-            $volume = $this->getConfigData("volume/min");
-        }
-
-        $operatory = $this->_operatoryCollectionFactory->create();
-
-        $senderZipCode = $request->getPostcode();
-        $packageValue = $request->getPackageValue();
-
-        $receiverZipcode = $request->getDestPostcode();
-
-        // @todo Create a method to calculate package qty
-        $packageQty = 1;
-
-        foreach ($operatory->getActiveList() as $operatory) {
-            $this->processOperatory(
-                $operatory,
-                $rateResult,
-                $weight,
-                $volume,
-                $senderZipCode,
-                $receiverZipcode,
-                $packageValue,
-                $packageQty,
-                $request->getPackageQty(),
-                $freeBoxes
-            );
-        }
-
-        return $rateResult;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getAllowedMethods()
-    {
-        return [
-            $this->_code => $this->getConfigData('title'),
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getContainerTypes(DataObject $params = null): array
-    {
-        return [
-            'gento_oca' => $this->getConfigData('title')
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isShippingLabelsAvailable()
-    {
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function isTrackingAvailable()
-    {
-        return true;
-    }
-
-    public function processOperatory(
-        $operatory,
-        Result $rateResult,
-        $weight,
-        $volume,
-        $senderZipcode,
-        $receiverZipcode,
-        $packageValue,
-        $packageQty,
-        $itemQty,
-        $freeQty
-    ) {
-        $tarifa = null;
-        $errorMessage = '';
-        try {
-            $tarifa = $this->ocaApi->getQuote(
-                $operatory->getCode(),
-                $weight,
-                $volume,
-                $senderZipcode,
-                $receiverZipcode,
-                $packageQty,
-                $packageValue
-            );
-        } catch (\Throwable $e) {
-            $errorMessage = $e->getMessage();
-        }
-
-        if ($tarifa == null) {
-            if ($this->getConfigData('showmethod')) {
-                $error = $this->_rateErrorFactory->create();
-                $error->setCarrier($this->_code);
-                $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
-                $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
-                $error->setErrorMessage($errorMessage);
-                $rateResult->append($error);
-            }
-            return $rateResult;
-        }
-
-        $quoteValue = $tarifa->Total;
-
-        if ($itemQty <= $freeQty) {
-            $quoteValue = 0;
-        }
-
-        $plazoEntrega = $tarifa->PlazoEntrega + (int) $this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
-        $this->_addRate(
-            $rateResult,
-            $operatory,
-            $operatory->getCode(),
-            $plazoEntrega,
-            $quoteValue
-        );
-
-        return $rateResult;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Gento\Oca\Model;
 
+use Exception;
 use Gento\Oca\Api\Data\HistoryInterface;
 use Gento\Oca\Api\Data\HistoryInterfaceFactory;
 use Gento\Oca\Api\Data\HistorySearchResultInterface;
@@ -163,6 +164,31 @@ class HistoryRepository implements HistoryRepositoryInterface
     }
 
     /**
+     * Helper function that adds a FilterGroup to the collection.
+     *
+     * @param FilterGroup $filterGroup
+     * @param Collection $collection
+     * @return $this
+     * @throws InputException
+     */
+    protected function addFilterGroupToCollection(
+        FilterGroup $filterGroup,
+        Collection $collection
+    ) {
+        $fields = [];
+        $conditions = [];
+        foreach ($filterGroup->getFilters() as $filter) {
+            $condition = $filter->getConditionType() ? $filter->getConditionType() : 'eq';
+            $fields[] = $filter->getField();
+            $conditions[] = [$condition => $filter->getValue()];
+        }
+        if ($fields) {
+            $collection->addFieldToFilter($fields, $conditions);
+        }
+        return $this;
+    }
+
+    /**
      * clear caches instances
      * @return void
      */
@@ -183,7 +209,7 @@ class HistoryRepository implements HistoryRepositoryInterface
         /** @var HistoryInterface|AbstractModel $history */
         try {
             $this->resource->save($history);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             throw new CouldNotSaveException(__(
                 'Could not save the history : %1',
                 $exception->getMessage()
@@ -219,27 +245,26 @@ class HistoryRepository implements HistoryRepositoryInterface
     }
 
     /**
-     * Helper function that adds a FilterGroup to the collection.
-     *
-     * @param FilterGroup $filterGroup
-     * @param Collection $collection
-     * @return $this
-     * @throws InputException
+     * @inheritDoc
      */
-    protected function addFilterGroupToCollection(
-        FilterGroup $filterGroup,
-        Collection $collection
-    ) {
-        $fields = [];
-        $conditions = [];
-        foreach ($filterGroup->getFilters() as $filter) {
-            $condition = $filter->getConditionType() ? $filter->getConditionType() : 'eq';
-            $fields[] = $filter->getField();
-            $conditions[] = [$condition => $filter->getValue()];
+    public function deleteHistories($dayLimit)
+    {
+        $collection = $this->historyCollectionFactory->create();
+        $connection = $this->resource->getConnection();
+        $tableName = $collection->getMainTable();
+
+        $connection->beginTransaction();
+        try {
+            $deleteQuery = $connection->select()
+                ->reset()
+                ->from($tableName)
+                ->where('created_at < DATE_SUB(CURRENT_DATE, INTERVAL ? DAY)', $dayLimit);
+            $connection->query($connection->deleteFromSelect($deleteQuery, $tableName));
+
+            $connection->commit();
+        } catch (Exception $e) {
+            $connection->rollBack();
+            throw $e;
         }
-        if ($fields) {
-            $collection->addFieldToFilter($fields, $conditions);
-        }
-        return $this;
     }
 }

@@ -4,5 +4,8 @@
         <job name="gento_oca_branches_sync" instance="Gento\Oca\Model\Cron\Branch\Sync" method="execute">
             <schedule>0 2 * * *</schedule>
         </job>
+        <job name="gento_oca_clean_history" instance="Gento\Oca\Model\Cron\History\Clean" method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
     </group>
 </config>
