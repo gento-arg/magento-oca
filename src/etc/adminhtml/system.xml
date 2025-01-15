@@ -9,6 +9,7 @@
                 <include path="Gento_Oca::system/general.xml"/>
                 <include path="Gento_Oca::system/volume.xml"/>
                 <include path="Gento_Oca::system/customer_address.xml"/>
+                <include path="Gento_Oca::system/crontab.xml"/>
             </group>
         </section>
     </system>

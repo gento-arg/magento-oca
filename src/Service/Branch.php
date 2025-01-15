@@ -28,9 +28,9 @@ class Branch
     private $scopeConfig;
 
     /**
-     * @param OcaApi               $ocaApi
-     * @param Data                 $helper
-     * @param ManagerInterface     $eventManager
+     * @param OcaApi $ocaApi
+     * @param Data $helper
+     * @param ManagerInterface $eventManager
      * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
@@ -48,8 +48,8 @@ class Branch
     /**
      * @param $zipCode
      *
-     * @throws Throwable
      * @return array[]
+     * @throws Throwable
      */
     public function getBranches($zipCode)
     {

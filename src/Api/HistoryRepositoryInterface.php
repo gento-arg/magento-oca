@@ -48,4 +48,12 @@ interface HistoryRepositoryInterface
      * @return void
      */
     public function clear();
+
+    /**
+     * Delete olds history requests
+     *
+     * @param $dayLimit
+     * @return mixed
+     */
+    public function deleteHistories($dayLimit);
 }

@@ -53,18 +53,6 @@
                 </templates>
             </settings>
         </filters>
-        <massaction name="listing_massaction">
-            <action name="view">
-                <settings>
-                    <callback>
-                        <target>editSelected</target>
-                        <provider>gento_oca_history_listing.gento_oca_history_listing.gento_oca_history_columns_editor</provider>
-                    </callback>
-                    <type>edit</type>
-                    <label translate="true">View</label>
-                </settings>
-            </action>
-        </massaction>
         <paging name="listing_paging"/>
     </listingToolbar>
     <columns name="gento_oca_history_columns">
