@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Gento\Oca\Observer;
 
 use Gento\Oca\Api\BranchRepositoryInterface;
-use Gento\Oca\Helper\Data;
+use Gento\Oca\Api\ConfigInterface;
 use Gento\Oca\Model\OcaApi;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -16,48 +18,25 @@ use Throwable;
 class PlaceOrderBeforeObserver implements ObserverInterface
 {
     /**
-     * @var OcaApi
-     */
-    protected $quoteRepository;
-    /**
-     * @var BranchRepositoryInterface
-     */
-    private $branchRepository;
-    /**
-     * @var Data
-     */
-    private $helper;
-    /**
-     * @var OcaApi
-     */
-    private $ocaApi;
-
-    /**
-     * SubmitBeforeObserver constructor.
-     *
      * @param BranchRepositoryInterface $branchRepository
-     * @param Data $helper
      * @param QuoteRepository $quoteRepository
      * @param OcaApi $ocaApi
+     * @param ConfigInterface $config
      */
     public function __construct(
-        BranchRepositoryInterface $branchRepository,
-        Data $helper,
-        QuoteRepository $quoteRepository,
-        OcaApi $ocaApi
+        readonly private BranchRepositoryInterface $branchRepository,
+        readonly private QuoteRepository $quoteRepository,
+        readonly private OcaApi $ocaApi,
+        readonly private ConfigInterface $config,
     ) {
-        $this->branchRepository = $branchRepository;
-        $this->helper = $helper;
-        $this->quoteRepository = $quoteRepository;
-        $this->ocaApi = $ocaApi;
     }
 
     /**
      * @param Observer $observer
      *
-     * @throws NoSuchEntityException
-     * @throws Throwable
      * @return $this|void
+     * @throws Throwable
+     * @throws NoSuchEntityException
      */
     public function execute(Observer $observer)
     {
@@ -98,7 +77,7 @@ class PlaceOrderBeforeObserver implements ObserverInterface
         }
 
         if ($branchData !== null) {
-            $branchData = $this->helper->addDescriptionToBranch($branchData);
+            $branchData = $this->config->addDescriptionToBranch($branchData);
             $branchDescription = trim($branchData['branch_description']);
             if (!empty($branchDescription)) {
                 $shippingDescription = $order->getShippingDescription() . PHP_EOL . $branchData['branch_description'];
@@ -108,5 +87,4 @@ class PlaceOrderBeforeObserver implements ObserverInterface
 
         return $this;
     }
-
 }

@@ -1,28 +1,23 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Gento\Oca\Model\Cron\History;
 
+use Gento\Oca\Api\ConfigInterface;
 use Gento\Oca\Api\HistoryRepositoryInterface;
 use Gento\Oca\Model\Config;
 
 class Clean
 {
     /**
-     * @var Config
-     */
-    private Config $config;
-    private HistoryRepositoryInterface $historyRepository;
-
-    /**
      * @param Config $config
      * @param HistoryRepositoryInterface $historyRepository
      */
     public function __construct(
-        Config $config,
-        HistoryRepositoryInterface $historyRepository
+        private ConfigInterface $config,
+        private HistoryRepositoryInterface $historyRepository
     ) {
-        $this->config = $config;
-        $this->historyRepository = $historyRepository;
     }
 
     /**

@@ -20,6 +20,7 @@
     <preference for="Gento\Oca\Api\HistoryRepositoryInterface" type="Gento\Oca\Model\HistoryRepository"/>
     <preference for="Gento\Oca\Api\Data\HistoryInterface" type="Gento\Oca\Model\History"/>
     <preference for="Gento\Oca\Api\Data\HistorySearchResultInterface" type="Magento\Framework\Api\SearchResults"/>
+    <preference for="Gento\Oca\Api\ConfigInterface" type="Gento\Oca\Model\Config"/>
     <type name="Magento\Backend\Controller\Adminhtml\Index\GlobalSearch">
         <arguments>
             <argument name="searchModules" xsi:type="array">
