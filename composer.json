@@ -2,9 +2,9 @@
     "name": "gento-arg/module-oca",
     "description": "Modulo de Magento 2 para la integracion con OCA",
     "type": "magento2-module",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "require": {
-        "php": ">7.4",
+        "php": ">8.1",
         "ext-dom": "20031129",
         "ext-libxml": "*",
         "gento-arg/module-core": "*",

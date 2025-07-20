@@ -8,6 +8,8 @@
                 <active>0</active>
                 <model>Gento\Oca\Model\Carrier</model>
                 <title>OCA</title>
+                <enable_max_value_package>1</enable_max_value_package>
+                <max_value_package>9999999</max_value_package>
                 <max_package_weight>100</max_package_weight>
                 <service_url>http://webservice.oca.com.ar/oep_tracking_test/Oep_Track.asmx</service_url>
                 <elocker_service_url>http://webservice.oca.com.ar/epak_tracking_test/Oep_TrackEPak.asmx</elocker_service_url>

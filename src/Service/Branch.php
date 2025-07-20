@@ -1,48 +1,26 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Gento\Oca\Service;
 
-use Gento\Oca\Helper\Data;
+use Gento\Oca\Api\ConfigInterface;
 use Gento\Oca\Model\OcaApi;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\ManagerInterface;
 use Throwable;
 
 class Branch
 {
     /**
-     * @var OcaApi
-     */
-    private $ocaApi;
-    /**
-     * @var Data
-     */
-    private $helper;
-    /**
-     * @var ManagerInterface
-     */
-    private $eventManager;
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
-
-    /**
      * @param OcaApi $ocaApi
-     * @param Data $helper
      * @param ManagerInterface $eventManager
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ConfigInterface $config
      */
     public function __construct(
-        OcaApi $ocaApi,
-        Data $helper,
-        ManagerInterface $eventManager,
-        ScopeConfigInterface $scopeConfig
+        readonly private OcaApi $ocaApi,
+        readonly private ManagerInterface $eventManager,
+        readonly private ConfigInterface $config,
     ) {
-        $this->ocaApi = $ocaApi;
-        $this->helper = $helper;
-        $this->eventManager = $eventManager;
-        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -54,22 +32,14 @@ class Branch
     public function getBranches($zipCode)
     {
         $branches = $this->ocaApi->getDeliveryBranchesZipCode($zipCode);
-        $branches = $this->helper->addDescriptionToBranches($branches);
+        $branches = $this->config->addDescriptionToBranches($branches);
 
-        if ($this->getBranchAutoPopulate()) {
+        if ($this->config->getBranchAutoPopulate()) {
             $this->eventManager->dispatch('gento_oca_get_branch_data', [
                 'branchs_data' => $branches
             ]);
         }
 
         return $branches;
-    }
-
-    /**
-     * @return mixed
-     */
-    protected function getBranchAutoPopulate()
-    {
-        return $this->scopeConfig->getValue('carriers/gento_oca/branch_autopopulate');
     }
 }

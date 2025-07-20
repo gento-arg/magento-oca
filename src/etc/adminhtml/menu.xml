@@ -2,13 +2,16 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <add id="Gento_Oca::shipping" title="OCA" translate="title" module="Gento_Oca" sortOrder="45"
-             dependsOnModule="Gento_Oca" resource="Gento_Oca::shipping" parent="Gento_Core::general"/>
-        <add id="Gento_Oca::operatories" title="Operatories" module="Gento_Oca" sortOrder="20"
+        <add id="Gento_Oca::shipping" title="OCA" translate="title" module="Gento_Oca" sortOrder="30"
+             dependsOnModule="Gento_Oca" resource="Gento_Oca::shipping" parent="Magento_Backend::stores"/>
+        <add id="Gento_Oca::config" title="Settings" module="Gento_Oca"
+             resource="Magento_Shipping::carriers" parent="Gento_Oca::shipping"
+             action="admin/system_config/edit/section/carriers"/>
+        <add id="Gento_Oca::operatories" title="Operatories" module="Gento_Oca"
              resource="Gento_Oca::operatories" parent="Gento_Oca::shipping" action="oca/operatory"/>
-        <add id="Gento_Oca::branches" title="Branches" module="Gento_Oca" sortOrder="22" resource="Gento_Oca::branches"
+        <add id="Gento_Oca::branches" title="Branches" module="Gento_Oca" resource="Gento_Oca::branches"
              parent="Gento_Oca::shipping" action="oca/branch"/>
-        <add id="Gento_Oca::history" title="History Requests" module="Gento_Oca" sortOrder="22"
+        <add id="Gento_Oca::history" title="History Requests" module="Gento_Oca"
              resource="Gento_Oca::history" parent="Gento_Oca::shipping" action="oca/history"/>
     </menu>
 </config>

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Gento\Oca\Model;
 
 use DateTime;
 use Exception;
-use Gento\Oca\Helper\Data;
+use Gento\Oca\Api\ConfigInterface;
 use Gento\Oca\Model\Carrier\Command\GetFreePackages;
 use Gento\Oca\Model\ResourceModel\Operatory\CollectionFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
@@ -16,7 +18,6 @@ use Magento\Directory\Model\CurrencyFactory;
 use Magento\Directory\Model\RegionFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
-use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\Helper\Data as PricingHelperData;
 use Magento\Framework\Xml\Security;
@@ -38,60 +39,17 @@ use Psr\Log\LoggerInterface;
 
 class Carrier extends AbstractCarrierOnline implements CarrierInterface
 {
-    const XML_PATH_FRANJAHORARIA = 'carriers/gento_oca/reception_time';
     /**
      * @var string
      */
     protected $_code = 'gento_oca';
 
     /**
-     * @var ProductRepositoryInterface
-     */
-    protected $productRepository;
-
-    /**
-     * @var ResultFactory
-     */
-    protected $_rateResultFactory;
-
-    /**
-     * @var OperatoryFactory
-     */
-    protected $_operatoryCollectionFactory;
-
-    /**
-     * @param OcaApi
-     */
-    private $ocaApi;
-
-    /**
-     * @param ManagerInterface
-     */
-    private $eventManager;
-
-    /**
-     * @var Data
-     */
-    private $helper;
-
-    /**
-     * @var GetFreePackages
-     */
-    private GetFreePackages $getFreePackages;
-    private Config $config;
-
-    /**
-     * Carrier constructor.
-     *
-     * @param ProductRepositoryInterface $productRepository
      * @param ScopeConfigInterface $scopeConfig
      * @param RateResultErrorFactory $rateErrorFactory
      * @param LoggerInterface $logger
      * @param RateFactory $rateResultFactory
      * @param MethodFactory $rateMethodFactory
-     * @param CollectionFactory $operatoryCollectionFactory
-     * @param OcaApi $ocaApi
-     * @param ManagerInterface $eventManager
      * @param Security $xmlSecurity
      * @param ElementFactory $xmlElFactory
      * @param ResultFactory $trackFactory
@@ -103,20 +61,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      * @param DirectoryData $directoryData
      * @param StockRegistryInterface $stockRegistry
      * @param PricingHelperData $pricingHelper
-     * @param Data $helper
+     * @param OcaApi $ocaApi
+     * @param CollectionFactory $operatoryCollectionFactory
+     * @param ProductRepositoryInterface $productRepository
+     * @param ConfigInterface $config
      * @param GetFreePackages $getFreePackages
      * @param array $data
      */
     public function __construct(
-        ProductRepositoryInterface $productRepository,
         ScopeConfigInterface $scopeConfig,
         RateResultErrorFactory $rateErrorFactory,
         LoggerInterface $logger,
         RateFactory $rateResultFactory,
         MethodFactory $rateMethodFactory,
-        CollectionFactory $operatoryCollectionFactory,
-        OcaApi $ocaApi,
-        ManagerInterface $eventManager,
         Security $xmlSecurity,
         ElementFactory $xmlElFactory,
         ResultFactory $trackFactory,
@@ -127,18 +84,14 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         CurrencyFactory $currencyFactory,
         DirectoryData $directoryData,
         StockRegistryInterface $stockRegistry,
-        PricingHelperData $pricingHelper,
-        Data $helper,
-        GetFreePackages $getFreePackages,
-        Config $config,
+        readonly private PricingHelperData $pricingHelper,
+        readonly private OcaApi $ocaApi,
+        readonly private CollectionFactory $operatoryCollectionFactory,
+        readonly private ProductRepositoryInterface $productRepository,
+        readonly private ConfigInterface $config,
+        readonly private GetFreePackages $getFreePackages,
         array $data = []
     ) {
-        $this->productRepository = $productRepository;
-        $this->_operatoryCollectionFactory = $operatoryCollectionFactory;
-        $this->ocaApi = $ocaApi;
-        $this->eventManager = $eventManager;
-        $this->pricingHelper = $pricingHelper;
-        $this->helper = $helper;
         parent::__construct(
             $scopeConfig,
             $rateErrorFactory,
@@ -157,8 +110,6 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $stockRegistry,
             $data
         );
-        $this->getFreePackages = $getFreePackages;
-        $this->config = $config;
     }
 
     /**
@@ -166,7 +117,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
      */
     public function collectRates(RateRequest $request)
     {
-        if (!$this->getConfigFlag('active')) {
+        if (!$this->getConfigFlag(ConfigInterface::XPATH_ACTIVE)) {
             return false;
         }
 
@@ -174,7 +125,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         if ($destPostCode === null) {
             return false;
         }
-        $cps = trim($this->getConfigData('disabled_cp') ?? '');
+        $cps = trim($this->getConfigData(ConfigInterface::XPATH_DISABLED_CP) ?? '');
         if ($cps) {
             $cp = $destPostCode;
             $cps = explode("\n", $cps);
@@ -199,16 +150,21 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         }
 
         if ($volume == 0) {
-            $volume = $this->getConfigData("volume/min");
+            $volume = $this->getConfigData(ConfigInterface::XPATH_VOLUME_MIN);
         }
 
-        $operatory = $this->_operatoryCollectionFactory->create();
+        $operatory = $this->operatoryCollectionFactory->create();
 
         $senderZipCode = $request->getPostcode();
         $packageValue = $request->getPackageValue();
 
         // @todo Create a method to calculate package qty
         $packageQty = 1;
+
+        $maxValuePackage = 0;
+        if ($this->getConfigFlag(ConfigInterface::XPATH_ENABLED_MAX_VALUE_PACKAGE)) {
+            $maxValuePackage = (int)$this->getConfigData(ConfigInterface::XPATH_MAX_VALUE_PACKAGE);
+        }
 
         foreach ($operatory->getActiveList() as $operatory) {
             $this->processOperatory(
@@ -221,7 +177,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 $packageValue,
                 $packageQty,
                 $request->getPackageQty(),
-                $freeBoxes
+                $freeBoxes,
+                $maxValuePackage
             );
         }
 
@@ -233,11 +190,25 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         /** @var Product $product */
         $product = $this->productRepository->getById($product->getId());
 
-        list($width, $height, $length) = $this->helper->getProductSize($product);
+        [$width, $height, $length] = $this->config->getProductSize($product);
 
         return $width * $height * $length;
     }
 
+    /**
+     * @param $operatory
+     * @param Result $rateResult
+     * @param $weight
+     * @param $volume
+     * @param $senderZipcode
+     * @param $receiverZipcode
+     * @param $packageValue
+     * @param $packageQty
+     * @param $itemQty
+     * @param $freeQty
+     * @param int $maxValuePackage
+     * @return Result
+     */
     public function processOperatory(
         $operatory,
         Result $rateResult,
@@ -248,11 +219,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $packageValue,
         $packageQty,
         $itemQty,
-        $freeQty
+        $freeQty,
+        int $maxValuePackage
     ) {
         $tarifa = null;
         $errorMessage = '';
         try {
+            if ($maxValuePackage > 0 && $packageValue > $maxValuePackage) {
+                $amount = $this->_currencyFactory->create();
+                throw new LocalizedException(__(
+                    'OCA only insures shipments up to %1. Orders above this amount cannot be processed with this shipping method.',
+                    $amount->formatTxt($maxValuePackage)
+                ));
+            }
             $tarifa = $this->ocaApi->getQuote(
                 $operatory->getCode(),
                 $weight,
@@ -267,11 +246,13 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         }
 
         if ($tarifa == null) {
-            if ($this->getConfigData('showmethod')) {
+            if ($this->getConfigData(ConfigInterface::XPATH_SHOWMETHOD)) {
                 $error = $this->_rateErrorFactory->create();
                 $error->setCarrier($this->_code);
-                $error->setCarrierTitle($this->getConfigData('title') . ' - ' . $operatory->getName());
-                $errorMessage = $this->getConfigData('specificerrmsg') ?: $errorMessage;
+                $error->setCarrierTitle(
+                    $this->getConfigData(ConfigInterface::XPATH_TITLE) . ' - ' . $operatory->getName()
+                );
+                $errorMessage = $this->getConfigData(ConfigInterface::XPATH_SPECIFIC_ERROR_MESSAGE) ?: $errorMessage;
                 $error->setErrorMessage($errorMessage);
                 $rateResult->append($error);
             }
@@ -284,7 +265,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
             $quoteValue = 0;
         }
 
-        $plazoEntrega = $tarifa->PlazoEntrega + (int)$this->_scopeConfig->getValue('carriers/gento_oca/days_extra');
+        $plazoEntrega = $tarifa->PlazoEntrega + $this->config->getDaysExtra();
         $this->_addRate(
             $rateResult,
             $operatory,
@@ -304,8 +285,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $total = 0,
         $description = false
     ) {
-        $shouldAddTax = $this->getStoreConfig('tax/calculation/shipping_includes_tax');
-        $shouldShowDays = $this->getConfigData('show_days');
+        $shouldAddTax = $this->getStoreConfig(\Magento\Tax\Model\Config::CONFIG_XML_PATH_SHIPPING_INCLUDES_TAX);
+        $shouldShowDays = $this->getConfigData(ConfigInterface::XPATH_SHOW_DAYS);
         if ($shouldAddTax) {
             // @todo use custom shipping tax configurable on backend
             $total = 1.21 * floatval($total);
@@ -314,7 +295,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         /** @var Method $method */
         $method = $this->_rateMethodFactory->create();
         $method->setCarrier($this->_code);
-        $method->setCarrierTitle($this->getConfigData('title'));
+        $method->setCarrierTitle($this->getConfigData(ConfigInterface::XPATH_TITLE));
         $method->setMethod($operatoryCode);
 
         $shippingPrice = $total;
@@ -368,7 +349,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     public function getAllowedMethods()
     {
         return [
-            $this->_code => $this->getConfigData('title'),
+            $this->_code => $this->getConfigData(ConfigInterface::XPATH_TITLE),
         ];
     }
 
@@ -378,7 +359,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
     public function getContainerTypes(DataObject $params = null): array
     {
         return [
-            'gento_oca' => $this->getConfigData('title')
+            'gento_oca' => $this->getConfigData(ConfigInterface::XPATH_TITLE)
         ];
     }
 
@@ -418,7 +399,7 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 ->loadByCode($recipientProvinceCode, $recipientCountryCode);
             $request->setRecipientAddressProvince($recipientProvince->getName() ?
                 $recipientProvince->getName() : $recipientProvinceCode);
-            $request->setFranjaHoraria($this->getStoreConfig(self::XML_PATH_FRANJAHORARIA));
+            $request->setFranjaHoraria($this->config->getReceptionTime());
 
             $metodo = explode('_', $request->getShippingMethod());
             $operativa = $metodo[0];
@@ -479,9 +460,9 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         foreach ($trackings as $tracking) {
             /** @var \Magento\Shipping\Model\Tracking\Result $result */
             $result = $this->_trackFactory->create();
-            $code = $this->getConfigData('code');
-            $title = $this->getConfigData('title');
-            $url = $this->getConfigData('tracking_url');
+            $code = $this->getConfigData(ConfigInterface::XPATH_CODE);
+            $title = $this->getConfigData(ConfigInterface::XPATH_TITLE);
+            $url = $this->getConfigData(ConfigInterface::XPATH_TRACKING_URL);
             $trackingResults = $this->ocaApi->getTracking($tracking);
             /** @var Status $status */
             $status = $this->_trackStatusFactory->create();

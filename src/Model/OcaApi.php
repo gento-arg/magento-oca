@@ -87,11 +87,11 @@ class OcaApi
 
         $this->_cuit = $this->getFixedCuit($scopeConfig->getValue(self::XML_PATH_CUIT));
         $this->_serviceEpakUrl = trim($scopeConfig->getValue(self::XML_PATH_EPAK_SERVICE_URL));
-        if ($this->_serviceEpakUrl !== '' && !preg_match('~/$~', $this->_serviceEpakUrl)) {
+        if ($this->_serviceEpakUrl !== '' && !preg_match('~/$~', $this->_serviceEpakUrl ?? '')) {
             $this->_serviceEpakUrl .= '/';
         }
         $this->_serviceUrl = trim($scopeConfig->getValue(self::XML_PATH_SERVICE_URL));
-        if ($this->_serviceUrl !== '' && !preg_match('~/$~', $this->_serviceUrl)) {
+        if ($this->_serviceUrl !== '' && !preg_match('~/$~', $this->_serviceUrl ?? '')) {
             $this->_serviceUrl .= '/';
         }
     }
@@ -107,11 +107,11 @@ class OcaApi
             return false;
         }
 
-        if (preg_match("/^[0-9]{2}\-[0-9]{8}\-[0-9]$/", $cuit)) {
+        if (preg_match("/^[0-9]{2}\-[0-9]{8}\-[0-9]$/", $cuit ?? '')) {
             return $cuit;
         }
 
-        if (strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit)) {
+        if (strlen($cuit) != 11 || preg_match("/[^0-9]/", $cuit ?? '')) {
             return false;
         }
 
@@ -515,10 +515,10 @@ class OcaApi
      */
     public function filterPostCode($postCode)
     {
-        if (!preg_match('/^[a-zA-Z]?([0-9]{4})([a-zA-Z]{0,3})$/', $postCode, $matches)) {
+        if (!preg_match('/^[a-zA-Z]?([0-9]{4})([a-zA-Z]{0,3})$/', $postCode ?? '', $matches)) {
             return null;
         }
-        if (preg_match('/^([0-9]{4})([a-zA-Z]{3})$/', $postCode)) {
+        if (preg_match('/^([0-9]{4})([a-zA-Z]{3})$/', $postCode ?? '')) {
             return null;
         }
         return $matches[1];

@@ -1,13 +1,14 @@
 <?xml version="1.0" ?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
                 <resource id="Magento_Backend::stores">
                     <resource id="Gento_Oca::oca" title="OCA" sortOrder="45">
-                        <resource id="Gento_Oca::operatories" title="Operatories" />
-                        <resource id="Gento_Oca::branches" title="Branches" />
-                        <resource id="Gento_Oca::history" title="History Requests" />
+                        <resource id="Gento_Oca::operatories" title="Operatories"/>
+                        <resource id="Gento_Oca::branches" title="Branches"/>
+                        <resource id="Gento_Oca::history" title="History Requests"/>
                     </resource>
                 </resource>
             </resource>
