@@ -161,6 +161,11 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         // @todo Create a method to calculate package qty
         $packageQty = 1;
 
+        $maxValuePackage = 0;
+        if ($this->getConfigFlag(ConfigInterface::XPATH_ENABLED_MAX_VALUE_PACKAGE)) {
+            $maxValuePackage = (int)$this->getConfigData(ConfigInterface::XPATH_MAX_VALUE_PACKAGE);
+        }
+
         foreach ($operatory->getActiveList() as $operatory) {
             $this->processOperatory(
                 $operatory,
@@ -172,7 +177,8 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
                 $packageValue,
                 $packageQty,
                 $request->getPackageQty(),
-                $freeBoxes
+                $freeBoxes,
+                $maxValuePackage
             );
         }
 
@@ -189,6 +195,20 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         return $width * $height * $length;
     }
 
+    /**
+     * @param $operatory
+     * @param Result $rateResult
+     * @param $weight
+     * @param $volume
+     * @param $senderZipcode
+     * @param $receiverZipcode
+     * @param $packageValue
+     * @param $packageQty
+     * @param $itemQty
+     * @param $freeQty
+     * @param int $maxValuePackage
+     * @return Result
+     */
     public function processOperatory(
         $operatory,
         Result $rateResult,
@@ -199,11 +219,19 @@ class Carrier extends AbstractCarrierOnline implements CarrierInterface
         $packageValue,
         $packageQty,
         $itemQty,
-        $freeQty
+        $freeQty,
+        int $maxValuePackage
     ) {
         $tarifa = null;
         $errorMessage = '';
         try {
+            if ($maxValuePackage > 0 && $packageValue > $maxValuePackage) {
+                $amount = $this->_currencyFactory->create();
+                throw new LocalizedException(__(
+                    'OCA only insures shipments up to %1. Orders above this amount cannot be processed with this shipping method.',
+                    $amount->formatTxt($maxValuePackage)
+                ));
+            }
             $tarifa = $this->ocaApi->getQuote(
                 $operatory->getCode(),
                 $weight,

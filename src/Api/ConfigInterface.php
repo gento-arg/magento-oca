@@ -11,6 +11,8 @@ interface ConfigInterface
     public const XPATH_CODE = 'code';
     public const XPATH_TRACKING_URL = 'tracking_url';
     public const XPATH_VOLUME_MIN = 'volume/min';
+    public const XPATH_ENABLED_MAX_VALUE_PACKAGE = 'enable_max_value_package';
+    public const XPATH_MAX_VALUE_PACKAGE = 'max_value_package';
     public const XPATH_SHOWMETHOD = 'showmethod';
     public const XPATH_TITLE = 'title';
     public const XPATH_SPECIFIC_ERROR_MESSAGE = 'specificerrmsg';

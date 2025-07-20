@@ -57,3 +57,7 @@ Volume,Volúmen
 "Branch to branch","Sucursal a sucursal"
 "Door to door","Puerta a puerta"
 "Door to branch","Puerta a sucursal"
+"Due to technical limitations in OCA, there may be unhandled errors. This option is added as a temporary workaround to help mitigate the issue until OCA provides an official fix. See more at <a href=""https://github.com/gento-arg/magento-oca/issues/28"" target=""_blank"">Github</a>","Debido a limitaciones técnicas en OCA, puede haber errores no controlados. Esta opción se agrega como una solución temporal para ayudar a mitigar el problema hasta que OCA proporcione una solución oficial. Conocer más en <a href=""https://github.com/gento-arg/magento-oca/issues/28"" target=""_blank"">Github</a>"
+"OCA only insures shipments up to %1. Orders above this amount cannot be processed with this shipping method.", "OCA solo asegura envíos por un máximo de %1. No es posible utilizar este método de envío para compras que superen ese monto."
+"Enable Max Value Package","Habilitar valor máximo de paquete"
+"Max Value Package","Valor máximo de paquete"
