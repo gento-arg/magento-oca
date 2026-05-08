@@ -3,17 +3,24 @@
         <form class="form form-oca-shipping-method" id="form-oca-shipping-method" data-mage-init='{"validation":{}}'
               novalidate="novalidate">
             <div data-bind="attr: {'data-hasrequired': $t('* Required Fields')}">
-                <select aria-required="true" data-bind="
-                                options: branchList,
-                                value: selectedBranch,
-                                optionsText: itemLabel,
-                                optionsCaption: $t('-- Select a branch --')"
-                        data-validate="{ required: true }"
-                        name="oca_branches" id="branch_list">
-                </select>
-                <div id="validate-branch-message" class="message notice" data-bind="visible: hasWarning">
-                    <!-- ko i18n: 'The branch is required' --><!-- /ko -->
+                <div class="message notice" data-bind="visible: !hasBranchList()">
+                    <!-- ko i18n: 'There is no branch available for the selected zipcode.' --><!-- /ko -->
                 </div>
+
+                <!-- ko if: hasBranchList -->
+                    <select aria-required="true" data-bind="
+                                    options: branchList,
+                                    value: selectedBranch,
+                                    optionsText: itemLabel,
+                                    optionsCaption: $t('-- Select a branch --')"
+                            data-validate="{ required: true }"
+                            name="oca_branches" id="branch_list">
+                    </select>
+                    <div id="validate-branch-message" class="message notice" data-bind="visible: hasWarning">
+                        <!-- ko i18n: 'The branch is required' --><!-- /ko -->
+                    </div>
+                <!-- /ko -->
+
                 <!-- ko if: selectedBranch -->
                 <div data-bind="visible: selectedBranch">
                     <dl>

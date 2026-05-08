@@ -61,3 +61,4 @@ Volume,Volúmen
 "OCA only insures shipments up to %1. Orders above this amount cannot be processed with this shipping method.", "OCA solo asegura envíos por un máximo de %1. No es posible utilizar este método de envío para compras que superen ese monto."
 "Enable Max Value Package","Habilitar valor máximo de paquete"
 "Max Value Package","Valor máximo de paquete"
+"There is no branch available for the selected zipcode.","No hay sucursales disponibles para el código postal seleccionado."
