@@ -28,6 +28,7 @@ define([
         branchList: ko.observableArray([]),
         branchesCache: ko.observable({}),
         hasWarning: ko.observable(true),
+        hasBranchList: ko.observable(false),
         initObservable: function () {
             this._super();
 
@@ -44,6 +45,12 @@ define([
 
                 this.visible(!quote.isVirtual() && carrier == 'gento_oca' && useIdci.includes(method))
                 this.loadBranches(quote.shippingAddress().postcode)
+            });
+            this.branchList.subscribe((data) => {
+                if (this.selectedBranch() && data.filter(b => b.code === this.selectedBranch().code).length === 0) {
+                    this.selectedBranch(null)
+                }
+                this.hasBranchList(!!data.length);
             });
             this.selectedBranch.subscribe(() => {
                 this.hasWarning(!this.selectedBranch())
